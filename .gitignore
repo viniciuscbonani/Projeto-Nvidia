@@ -1,0 +1,17 @@
+.env
+CLAUDE.md
+
+# Ambiente Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# Artefatos locais (sem Docker)
+radar.db
+radar.db-journal
+chroma/
+
+# Ferramentas / SO
+.pytest_cache/
+.ruff_cache/
+.DS_Store
