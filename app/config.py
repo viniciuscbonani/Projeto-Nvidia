@@ -2,7 +2,7 @@
 
 Use `from app.config import settings` em qualquer lugar — nunca leia variáveis
 de ambiente espalhadas pelo código. Isso mantém a troca SQLite→Postgres e
-Chroma-embarcado→servidor num só lugar.
+Qdrant-local→servidor num só lugar.
 """
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -18,8 +18,8 @@ class Settings(BaseSettings):
     # Banco relacional (SQLite embarcado por enquanto)
     database_url: str = "sqlite:///radar.db"
 
-    # Banco vetorial (Chroma embarcado por enquanto)
-    chroma_path: str = "./chroma"
+    # Banco vetorial (Qdrant em modo local por enquanto; servidor depois)
+    qdrant_path: str = "./qdrant"
 
 
 settings = Settings()
