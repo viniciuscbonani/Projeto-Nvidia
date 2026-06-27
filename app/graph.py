@@ -1,15 +1,20 @@
-"""Grafo do pipeline (Fase 1 — esqueleto andante completo).
+"""Grafo do pipeline (Fase 3 — desvio condicional + loop).
 
-Os 8 nós (todos stubs) em linha reta, START → ... → END. Cada nó vive em seu
-próprio arquivo; aqui só importamos e fazemos a fiação. As fases seguintes trocam
-os stubs por lógica real e adicionam a aresta condicional e o loop (Fase 3).
+Os 8 nós, agora com ramificação: o Classifier desvia `non-ai` direto para END, e
+o Evidence Validator faz loop de volta ao Search Planner quando a evidência é
+insuficiente (com teto em `tentativas`). Cada nó vive em seu arquivo; aqui só
+importamos e fazemos a fiação.
 
     START → search_planner → scraper → extractor → classifier
-          → evidence_validator → nvidia_rag → recommendation → briefing → END
+      classifier ──(non-ai)──────────────────────────────────→ END
+      classifier ──(ai-native/ai-enabled)──→ evidence_validator
+      evidence_validator ──(insuf. e tentativas<teto)──→ search_planner   (loop)
+      evidence_validator ──(ok ou teto)──→ nvidia_rag → recommendation → briefing → END
 """
 
 from langgraph.graph import END, START, StateGraph
 
+from app.config import settings
 from app.state import RadarState
 from app.search_planner import search_planner
 from app.scraper import scraper
@@ -21,27 +26,54 @@ from app.recommendation import recommendation
 from app.briefing import briefing
 
 
-# Ordem do pipeline (linha reta). Para mudar o fluxo, mexa só aqui.
-NODES = [
-    ("search_planner", search_planner),
-    ("scraper", scraper),
-    ("extractor", extractor),
-    ("classifier", classifier),
-    ("evidence_validator", evidence_validator),
-    ("nvidia_rag", nvidia_rag),
-    ("recommendation", recommendation),
-    ("briefing", briefing),
-]
+def rota_classificacao(state: RadarState) -> str:
+    """non-ai encerra cedo; o resto segue para a validação de evidências."""
+    return "non_ai" if state.classificacao == "non-ai" else "continua"
+
+
+def rota_evidencia(state: RadarState) -> str:
+    """Loop de volta ao Search Planner se a evidência for insuficiente e ainda
+    houver tentativas; senão, segue para o RAG."""
+    if not state.evidencias_ok and state.tentativas < settings.max_tentativas:
+        return "coleta_mais"
+    return "continua"
 
 
 def build_graph():
     builder = StateGraph(RadarState)
-    for name, fn in NODES:
+    for name, fn in [
+        ("search_planner", search_planner),
+        ("scraper", scraper),
+        ("extractor", extractor),
+        ("classifier", classifier),
+        ("evidence_validator", evidence_validator),
+        ("nvidia_rag", nvidia_rag),
+        ("recommendation", recommendation),
+        ("briefing", briefing),
+    ]:
         builder.add_node(name, fn)
-    builder.add_edge(START, NODES[0][0])
-    for (origem, _), (destino, _) in zip(NODES, NODES[1:]):
-        builder.add_edge(origem, destino)
-    builder.add_edge(NODES[-1][0], END)
+
+    # trechos retos
+    builder.add_edge(START, "search_planner")
+    builder.add_edge("search_planner", "scraper")
+    builder.add_edge("scraper", "extractor")
+    builder.add_edge("extractor", "classifier")
+    builder.add_edge("nvidia_rag", "recommendation")
+    builder.add_edge("recommendation", "briefing")
+    builder.add_edge("briefing", END)
+
+    # desvio condicional após o Classifier
+    builder.add_conditional_edges(
+        "classifier",
+        rota_classificacao,
+        {"non_ai": END, "continua": "evidence_validator"},
+    )
+    # loop do Evidence Validator (com teto)
+    builder.add_conditional_edges(
+        "evidence_validator",
+        rota_evidencia,
+        {"coleta_mais": "search_planner", "continua": "nvidia_rag"},
+    )
     return builder.compile()
 
 
@@ -50,6 +82,7 @@ graph = build_graph()
 
 if __name__ == "__main__":
     final = graph.invoke(RadarState(consulta="Tractian"))
-    # invoke devolve os valores do State como dict
     briefing_text = final["briefing"] if isinstance(final, dict) else final.briefing
-    print(briefing_text)
+    classificacao = final["classificacao"] if isinstance(final, dict) else final.classificacao
+    print(f"[classificação: {classificacao}]")
+    print(briefing_text or "(encerrado cedo — non-ai)")

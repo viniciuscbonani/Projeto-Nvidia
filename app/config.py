@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     http_timeout: float = 15.0
     busca_top_n: int = 8
 
+    # Loop do Evidence Validator (teto de tentativas de coleta)
+    max_tentativas: int = 2
+
     @property
     def llm_base_url(self) -> str | None:
         """URL base do LLM: Groq se houver chave Groq; senão OpenAI (None)."""

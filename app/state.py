@@ -4,7 +4,7 @@ Cada nó lê os campos de que precisa e retorna apenas um dict parcial com o
 que atualizou; o LangGraph mescla esse dict no State.
 """
 
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -25,6 +25,20 @@ class DadosEmpresa(BaseModel):
     clientes: list[str] = Field(default_factory=list)
     tecnologias: list[str] = Field(default_factory=list)  # stack / sinais de IA
     fontes: list[str] = Field(default_factory=list)       # URLs usadas
+
+
+class Classificacao(BaseModel):
+    """Saída estruturada do Classifier — os 3 eixos AI-native (CLAUDE.md).
+
+    `rotulo` é usado pelo desvio condicional do grafo; os 3 eixos e a
+    justificativa dão rastreabilidade ao julgamento.
+    """
+
+    rotulo: Literal["ai-native", "ai-enabled", "non-ai"]
+    eixo_produto: str = ""          # a IA é o core do valor? (se remove a IA, sobra produto?)
+    eixo_dados_modelo: str = ""     # tem dado proprietário e/ou modelo próprio?
+    eixo_stack: str = ""            # controla custo/latência da própria inferência?
+    justificativa: str = ""
 
 
 class Recomendacao(BaseModel):
@@ -50,7 +64,8 @@ class RadarState(BaseModel):
     urls_busca: list[str] = Field(default_factory=list)  # URLs a coletar (Search Planner)
     conteudo_bruto: list[dict] = Field(default_factory=list)   # trechos + fonte
     dados_estruturados: Optional[DadosEmpresa] = None   # schema extraído (structured output)
-    classificacao: Optional[str] = None                 # "ai-native" | "ai-enabled" | "non-ai"
+    classificacao: Optional[str] = None                 # rótulo: "ai-native" | "ai-enabled" | "non-ai"
+    classificacao_detalhe: Optional[Classificacao] = None  # análise rica dos 3 eixos
     evidencias_ok: bool = False                         # gate do Evidence Validator
     tentativas: int = 0                                 # teto do loop do Validator
     contexto_rag: list[str] = Field(default_factory=list)      # trechos NVIDIA recuperados

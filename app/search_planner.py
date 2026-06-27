@@ -59,5 +59,7 @@ def buscar_urls(consulta: str, top_n: int | None = None) -> list[str]:
 
 def search_planner(state: RadarState) -> dict:
     consulta = state.consulta.strip() or "Tractian"
-    urls = buscar_urls(consulta)
+    # no retry do loop (tentativas > 0), amplia a cobertura para juntar evidência nova
+    top_n = settings.busca_top_n + state.tentativas * settings.busca_top_n
+    urls = buscar_urls(consulta, top_n=top_n)
     return {"alvos": [consulta], "urls_busca": urls}
