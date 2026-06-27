@@ -10,6 +10,9 @@ dependencies = [
     "openai>=2.43",
     "cohere>=7.0",
     "qdrant-client>=1.12",
+    "trafilatura>=2.1",
+    "beautifulsoup4>=4.15",
+    "ddgs>=9.0",
     "sqlalchemy>=2.0",
     "psycopg[binary]>=3.3",
     "pydantic>=2.13",
@@ -17,6 +20,9 @@ dependencies = [
     "python-dotenv>=1.0",
     "uvicorn>=0.49",
 ]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
 
 [build-system]
 requires = ["setuptools>=68"]

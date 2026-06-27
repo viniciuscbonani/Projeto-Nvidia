@@ -9,6 +9,24 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
+class DadosEmpresa(BaseModel):
+    """Saída estruturada do Extractor (structured output via LLM).
+
+    Os campos vêm do brief (§2): dados públicos da empresa, produto, setor,
+    clientes, funding, founders e tecnologias. `fontes` guarda as URLs usadas
+    (rastreabilidade).
+    """
+
+    nome: str = ""
+    setor: Optional[str] = None
+    descricao: str = ""                                  # o que a empresa faz / produto
+    founders: list[str] = Field(default_factory=list)
+    funding: Optional[str] = None
+    clientes: list[str] = Field(default_factory=list)
+    tecnologias: list[str] = Field(default_factory=list)  # stack / sinais de IA
+    fontes: list[str] = Field(default_factory=list)       # URLs usadas
+
+
 class Recomendacao(BaseModel):
     """Saída estruturada do Recommendation Agent.
 
@@ -29,8 +47,9 @@ class Recomendacao(BaseModel):
 class RadarState(BaseModel):
     consulta: str = ""                                  # entrada do usuário
     alvos: list[str] = Field(default_factory=list)      # empresas a investigar
+    urls_busca: list[str] = Field(default_factory=list)  # URLs a coletar (Search Planner)
     conteudo_bruto: list[dict] = Field(default_factory=list)   # trechos + fonte
-    dados_estruturados: dict = Field(default_factory=dict)     # schema extraído
+    dados_estruturados: Optional[DadosEmpresa] = None   # schema extraído (structured output)
     classificacao: Optional[str] = None                 # "ai-native" | "ai-enabled" | "non-ai"
     evidencias_ok: bool = False                         # gate do Evidence Validator
     tentativas: int = 0                                 # teto do loop do Validator

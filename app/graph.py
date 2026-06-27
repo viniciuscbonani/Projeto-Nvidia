@@ -1,40 +1,47 @@
-"""Olá-mundo do grafo (Fase 0).
+"""Grafo do pipeline (Fase 1 — esqueleto andante completo).
 
-Dois nós stub em linha reta — só para provar que o LangGraph orquestra o
-RadarState de ponta a ponta. As fases seguintes substituem estes stubs pelos
-8 agentes reais e adicionam a aresta condicional e o loop.
+Os 8 nós (todos stubs) em linha reta, START → ... → END. Cada nó vive em seu
+próprio arquivo; aqui só importamos e fazemos a fiação. As fases seguintes trocam
+os stubs por lógica real e adicionam a aresta condicional e o loop (Fase 3).
 
-    START → search_planner → briefing → END
+    START → search_planner → scraper → extractor → classifier
+          → evidence_validator → nvidia_rag → recommendation → briefing → END
 """
 
 from langgraph.graph import END, START, StateGraph
 
 from app.state import RadarState
+from app.search_planner import search_planner
+from app.scraper import scraper
+from app.extractor import extractor
+from app.classifier import classifier
+from app.evidence_validator import evidence_validator
+from app.nvidia_rag import nvidia_rag
+from app.recommendation import recommendation
+from app.briefing import briefing
 
 
-def search_planner(state: RadarState) -> dict:
-    """Stub: por enquanto só transforma a consulta num único alvo."""
-    alvo = state.consulta.strip() or "Tractian"
-    return {"alvos": [alvo]}
-
-
-def briefing(state: RadarState) -> dict:
-    """Stub: monta um briefing-placeholder a partir do alvo."""
-    alvo = state.alvos[0] if state.alvos else "(sem alvo)"
-    texto = (
-        f"Briefing (stub) — {alvo}\n"
-        "Pipeline ainda não implementado: este é o esqueleto andante da Fase 0."
-    )
-    return {"briefing": texto}
+# Ordem do pipeline (linha reta). Para mudar o fluxo, mexa só aqui.
+NODES = [
+    ("search_planner", search_planner),
+    ("scraper", scraper),
+    ("extractor", extractor),
+    ("classifier", classifier),
+    ("evidence_validator", evidence_validator),
+    ("nvidia_rag", nvidia_rag),
+    ("recommendation", recommendation),
+    ("briefing", briefing),
+]
 
 
 def build_graph():
     builder = StateGraph(RadarState)
-    builder.add_node("search_planner", search_planner)
-    builder.add_node("briefing", briefing)
-    builder.add_edge(START, "search_planner")
-    builder.add_edge("search_planner", "briefing")
-    builder.add_edge("briefing", END)
+    for name, fn in NODES:
+        builder.add_node(name, fn)
+    builder.add_edge(START, NODES[0][0])
+    for (origem, _), (destino, _) in zip(NODES, NODES[1:]):
+        builder.add_edge(origem, destino)
+    builder.add_edge(NODES[-1][0], END)
     return builder.compile()
 
 
