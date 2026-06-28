@@ -45,6 +45,12 @@ class Settings(BaseSettings):
     rag_top_n: int = 5                           # após o rerank (precisão)
     cohere_rerank_model: str = "rerank-v3.5"
 
+    # Score composto (Fase 5): pesos configuráveis (somam 1.0). Diferencial = expor isto.
+    w_ai_native: float = 0.30
+    w_nvidia_fit: float = 0.30
+    w_tracao: float = 0.20
+    w_time_ia: float = 0.20
+
     @property
     def llm_base_url(self) -> str | None:
         """URL base do LLM: Groq se houver chave Groq; senão OpenAI (None)."""

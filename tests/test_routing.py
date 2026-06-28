@@ -2,9 +2,9 @@
 
 import pytest
 
-from app import classifier, extractor, rag, scraper, search_planner
+from app import briefing, classifier, extractor, rag, recommendation, scraper, search_planner
 from app.graph import graph
-from app.state import Classificacao, DadosEmpresa, RadarState
+from app.state import Classificacao, DadosEmpresa, RadarState, Recomendacao, Score
 
 HTML = "<html><body><article><p>" + ("texto " * 20) + "</p></article></body></html>"
 
@@ -24,6 +24,11 @@ def _base_offline(monkeypatch, rotulo, descricao):
     monkeypatch.setattr(extractor, "salvar_empresa", lambda dados: None)
     monkeypatch.setattr(classifier, "classificar", lambda dados: Classificacao(rotulo=rotulo))
     monkeypatch.setattr(rag, "recuperar", lambda q: [{"texto": "ctx", "fonte": "https://docs.nvidia.com/x"}])
+    monkeypatch.setattr(
+        recommendation, "recomendar",
+        lambda dados, classificacao, contexto_rag: (Recomendacao(tecnologias=["Triton"]), Score()),
+    )
+    monkeypatch.setattr(briefing, "redigir", lambda state: "## Briefing (fake)")
 
 
 def test_non_ai_encerra_cedo(monkeypatch):

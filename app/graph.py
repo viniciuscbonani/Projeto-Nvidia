@@ -82,7 +82,12 @@ graph = build_graph()
 
 if __name__ == "__main__":
     final = graph.invoke(RadarState(consulta="Tractian"))
-    briefing_text = final["briefing"] if isinstance(final, dict) else final.briefing
-    classificacao = final["classificacao"] if isinstance(final, dict) else final.classificacao
+    classificacao = final.get("classificacao")
+    score = final.get("score")
     print(f"[classificação: {classificacao}]")
-    print(briefing_text or "(encerrado cedo — non-ai)")
+    if score:
+        print(f"[score composto: {score.composto}  "
+              f"(ai-native {score.ai_native} · fit {score.nvidia_fit} · "
+              f"tração {score.tracao} · time {score.time_ia})]")
+    print()
+    print(final.get("briefing") or "(encerrado cedo — non-ai)")

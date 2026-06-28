@@ -58,6 +58,17 @@ class Recomendacao(BaseModel):
     evidencias: list[str] = Field(default_factory=list)         # 7. evidências/fontes usadas
 
 
+class Score(BaseModel):
+    """Score composto (brief). As 4 notas (0–10) são julgadas pelo LLM; `composto`
+    é a soma ponderada calculada pelo código (pesos configuráveis em settings)."""
+
+    ai_native: float = 0.0      # quão AI-native (alinhado à classificação)
+    nvidia_fit: float = 0.0     # tamanho do gap/uplift que a NVIDIA destrava
+    tracao: float = 0.0         # tração / sinais de funding/VC
+    time_ia: float = 0.0        # força do time de IA (founders/tecnologias)
+    composto: float = 0.0       # Σ wᵢ·notaᵢ (código)
+
+
 class RadarState(BaseModel):
     consulta: str = ""                                  # entrada do usuário
     alvos: list[str] = Field(default_factory=list)      # empresas a investigar
@@ -70,4 +81,5 @@ class RadarState(BaseModel):
     tentativas: int = 0                                 # teto do loop do Validator
     contexto_rag: list[str] = Field(default_factory=list)      # trechos NVIDIA recuperados
     recomendacao: Optional[Recomendacao] = None         # saída estruturada (7 campos do brief §5.5)
+    score: Optional[Score] = None                       # score composto (4 notas + composto)
     briefing: str = ""                                  # relatório executivo final

@@ -1,24 +1,39 @@
-"""Briefing (stub — Fase 1).
+"""Briefing (Fase 5 — real).
 
-Redige o relatório executivo final a partir de tudo que os nós anteriores
-preencheram no State. Stub: monta um briefing-placeholder com os campos-chave.
+Redige o relatório executivo final para o gerente de Startups & VCs da NVIDIA, a
+partir de tudo que o pipeline produziu (perfil, classificação, recomendação, score)
+e citando as fontes do `contexto_rag`. Linguagem de negócio, não catálogo de produto.
+LLM = Groq (via app.llm). `redigir` separado do nó para ser testável.
 """
 
+from app.llm import chat
 from app.state import RadarState
+
+_INSTRUCAO = (
+    "Você redige um briefing executivo (markdown) para o gerente de Startups & VCs da NVIDIA "
+    "sobre uma startup, apoiando a abordagem comercial/técnica do programa NVIDIA Inception.\n"
+    "Seja conciso e use linguagem de negócio (custo, latência, defensibilidade), não catálogo de produto.\n"
+    "Estruture: visão geral da empresa, diagnóstico AI-native, tecnologias NVIDIA recomendadas com o "
+    "porquê, prioridade/próxima ação, e o score. Cite as fontes (URLs) do contexto ao afirmar specs."
+)
+
+
+def redigir(state: RadarState) -> str:
+    dados = state.dados_estruturados.model_dump_json(indent=2) if state.dados_estruturados else "{}"
+    rec = state.recomendacao.model_dump_json(indent=2) if state.recomendacao else "{}"
+    score = state.score.model_dump_json() if state.score else "{}"
+    contexto = "\n".join(state.contexto_rag) or "(sem contexto)"
+    prompt = (
+        f"{_INSTRUCAO}\n\n"
+        f"EMPRESA:\n{dados}\n\n"
+        f"CLASSIFICAÇÃO: {state.classificacao}\n\n"
+        f"RECOMENDAÇÃO:\n{rec}\n\n"
+        f"SCORE:\n{score}\n\n"
+        f"CONTEXTO NVIDIA (fontes para citar):\n{contexto}"
+    )
+    resp = chat(temperature=0.3).invoke(prompt)
+    return getattr(resp, "content", str(resp))
 
 
 def briefing(state: RadarState) -> dict:
-    alvo = state.alvos[0] if state.alvos else "(sem alvo)"
-    classificacao = state.classificacao or "(sem classificação)"
-    techs = (
-        ", ".join(state.recomendacao.tecnologias)
-        if state.recomendacao
-        else "(nenhuma)"
-    )
-    texto = (
-        f"Briefing (stub) — {alvo}\n"
-        f"Classificação: {classificacao}\n"
-        f"Tecnologias recomendadas: {techs}\n"
-        "Pipeline ainda em stubs: este é o esqueleto andante da Fase 1."
-    )
-    return {"briefing": texto}
+    return {"briefing": redigir(state)}

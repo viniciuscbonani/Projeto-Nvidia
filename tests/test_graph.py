@@ -7,9 +7,9 @@ e classificação por LLM são monkeypatchados. A evidência é suficiente (2 do
 
 import pytest
 
-from app import classifier, extractor, rag, scraper, search_planner
+from app import briefing, classifier, extractor, rag, recommendation, scraper, search_planner
 from app.graph import graph
-from app.state import Classificacao, DadosEmpresa, RadarState
+from app.state import Classificacao, DadosEmpresa, RadarState, Recomendacao, Score
 
 HTML = "<html><body><article><p>" + ("Tractian faz IA industrial. " * 10) + "</p></article></body></html>"
 
@@ -37,6 +37,14 @@ def offline(monkeypatch):
         rag, "recuperar",
         lambda q: [{"texto": "Triton serve modelos", "fonte": "https://docs.nvidia.com/triton"}],
     )
+    monkeypatch.setattr(
+        recommendation, "recomendar",
+        lambda dados, classificacao, contexto_rag: (
+            Recomendacao(tecnologias=["Triton"], evidencias=["https://docs.nvidia.com/triton"]),
+            Score(ai_native=8, nvidia_fit=9, tracao=6, time_ia=7),
+        ),
+    )
+    monkeypatch.setattr(briefing, "redigir", lambda state: "## Briefing (fake)")
 
 
 def test_pipeline_preenche_todos_os_campos(offline):
@@ -52,4 +60,6 @@ def test_pipeline_preenche_todos_os_campos(offline):
     assert final["tentativas"] == 1          # sem loop (evidência suficiente de 1ª)
     assert final["contexto_rag"]
     assert final["recomendacao"] is not None
+    assert final["recomendacao"].tecnologias
+    assert final["score"].composto > 0
     assert final["briefing"]
