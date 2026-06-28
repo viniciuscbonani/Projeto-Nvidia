@@ -2,7 +2,7 @@
 
 import pytest
 
-from app import classifier, extractor, scraper, search_planner
+from app import classifier, extractor, rag, scraper, search_planner
 from app.graph import graph
 from app.state import Classificacao, DadosEmpresa, RadarState
 
@@ -23,6 +23,7 @@ def _base_offline(monkeypatch, rotulo, descricao):
     )
     monkeypatch.setattr(extractor, "salvar_empresa", lambda dados: None)
     monkeypatch.setattr(classifier, "classificar", lambda dados: Classificacao(rotulo=rotulo))
+    monkeypatch.setattr(rag, "recuperar", lambda q: [{"texto": "ctx", "fonte": "https://docs.nvidia.com/x"}])
 
 
 def test_non_ai_encerra_cedo(monkeypatch):

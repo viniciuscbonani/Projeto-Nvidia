@@ -7,7 +7,7 @@ e classificação por LLM são monkeypatchados. A evidência é suficiente (2 do
 
 import pytest
 
-from app import classifier, extractor, scraper, search_planner
+from app import classifier, extractor, rag, scraper, search_planner
 from app.graph import graph
 from app.state import Classificacao, DadosEmpresa, RadarState
 
@@ -32,6 +32,10 @@ def offline(monkeypatch):
     monkeypatch.setattr(
         classifier, "classificar",
         lambda dados: Classificacao(rotulo="ai-native", justificativa="core de IA"),
+    )
+    monkeypatch.setattr(
+        rag, "recuperar",
+        lambda q: [{"texto": "Triton serve modelos", "fonte": "https://docs.nvidia.com/triton"}],
     )
 
 

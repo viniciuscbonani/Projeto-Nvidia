@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     # Chaves de API
     openai_api_key: str = ""
     groq_api_key: str = ""
+    gemini_api_key: str = ""
     cohere_api_key: str = ""
 
     # Banco relacional (SQLite embarcado por enquanto)
@@ -33,6 +34,16 @@ class Settings(BaseSettings):
 
     # Loop do Evidence Validator (teto de tentativas de coleta)
     max_tentativas: int = 2
+
+    # RAG (Fase 4): embeddings, Qdrant e rerank
+    # "gemini" (multilíngue, grátis) | "openai" | "local" (fastembed, grátis/offline)
+    embedding_provider: str = "gemini"
+    embedding_model: str = "text-embedding-3-small"        # usado se provider=openai
+    gemini_embedding_model: str = "models/gemini-embedding-001"  # usado se provider=gemini
+    qdrant_collection: str = "nvidia"
+    rag_top_k: int = 50                          # candidatos da busca híbrida (recall)
+    rag_top_n: int = 5                           # após o rerank (precisão)
+    cohere_rerank_model: str = "rerank-v3.5"
 
     @property
     def llm_base_url(self) -> str | None:

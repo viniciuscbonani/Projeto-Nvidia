@@ -50,6 +50,30 @@ DOMINIOS_CONFIAVEIS = {
     _dominio(u) for u in FONTES_DIRETORIOS + FONTES_NOTICIAS
 }
 
+# Base de conhecimento NVIDIA (Fase 4) — URLs amigáveis a scraping (docs/GitHub/rapids),
+# cobrindo os produtos do brief §5.4. Ingeridas uma vez por app/ingest.py.
+NVIDIA_DOCS = [
+    {"titulo": "NVIDIA Inception", "url": "https://www.nvidia.com/en-us/startups/"},
+    {"titulo": "NIM", "url": "https://github.com/NVIDIA/nim-deploy"},
+    {"titulo": "NeMo", "url": "https://github.com/NVIDIA/NeMo"},
+    {"titulo": "NeMo Guardrails", "url": "https://github.com/NVIDIA/NeMo-Guardrails"},
+    {"titulo": "Triton Inference Server", "url": "https://github.com/triton-inference-server/server"},
+    {"titulo": "TensorRT-LLM", "url": "https://github.com/NVIDIA/TensorRT-LLM"},
+    {"titulo": "RAPIDS", "url": "https://github.com/rapidsai/cudf"},
+    {"titulo": "cuML", "url": "https://github.com/rapidsai/cuml"},
+    {"titulo": "NVIDIA Riva", "url": "https://github.com/nvidia-riva/python-clients"},
+    {"titulo": "NVIDIA Isaac", "url": "https://github.com/NVIDIA-Omniverse/IsaacSim"},
+    {"titulo": "NVIDIA Morpheus", "url": "https://github.com/nv-morpheus/Morpheus"},
+    {"titulo": "CUDA", "url": "https://github.com/NVIDIA/cuda-samples"},
+    {"titulo": "NVIDIA Omniverse", "url": "https://github.com/NVIDIA-Omniverse/kit-app-template"},
+    {"titulo": "NVIDIA Clara / MONAI", "url": "https://github.com/Project-MONAI/MONAI"},
+    {"titulo": "NVIDIA AI Enterprise", "url": "https://github.com/NVIDIA/GenerativeAIExamples"},
+    {"titulo": "Bolo de 5 camadas da IA (NVIDIA)", "url": "https://blogs.nvidia.com/blog/ai-5-layer-cake/"},
+    # §8.1 — materiais conceituais (AI-native services)
+    {"titulo": "AI services (Sequoia)", "url": "https://www.sequoiacap.com/article/services-the-new-software/"},
+    {"titulo": "AI-native services playbook (Emergence)", "url": "https://www.emcap.com/thoughts/the-ai-native-services-playbook"},
+]
+
 # Domínios a descartar (restritivos ou de baixo sinal)
 DOMINIOS_BLOQUEADOS = {
     "linkedin.com",

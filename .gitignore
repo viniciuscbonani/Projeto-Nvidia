@@ -9,6 +9,7 @@ __pycache__/
 # Artefatos locais (sem Docker)
 radar.db
 radar.db-journal
+qdrant/
 chroma/
 
 # Ferramentas / SO
