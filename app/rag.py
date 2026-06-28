@@ -8,6 +8,7 @@ Embeddings densos são provider-agnósticos: OpenAI (default) ou fastembed local
 (grátis), via `settings.embedding_provider`.
 """
 
+import atexit
 import time
 
 import cohere
@@ -31,6 +32,19 @@ def get_client() -> QdrantClient:
     if _client is None:
         _client = QdrantClient(path=settings.qdrant_path)
     return _client
+
+
+@atexit.register
+def _fechar_client() -> None:
+    """Fecha o Qdrant local no fim do processo — evita o aviso ruidoso do __del__
+    durante o shutdown do interpretador."""
+    global _client
+    if _client is not None:
+        try:
+            _client.close()
+        except Exception:
+            pass
+        _client = None
 
 
 # ---------- embeddings ----------

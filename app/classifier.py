@@ -38,5 +38,9 @@ def classificar(dados: DadosEmpresa) -> Classificacao:
 
 def classifier(state: RadarState) -> dict:
     dados = state.dados_estruturados or DadosEmpresa(nome=state.consulta)
+    # se nada foi coletado (ex.: busca bloqueada), não dá para classificar:
+    # rotular honestamente como "sem-dados" em vez de chutar "non-ai".
+    if not (dados.setor or dados.descricao or dados.tecnologias):
+        return {"classificacao": "sem-dados"}
     c = classificar(dados)
     return {"classificacao": c.rotulo, "classificacao_detalhe": c}

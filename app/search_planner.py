@@ -6,6 +6,7 @@ empresa (sem cadastro manual). Prioriza domínios confiáveis do registro do
 projeto (TAPI §7) e descarta fontes restritivas (LinkedIn/redes).
 """
 
+import time
 from urllib.parse import urlparse
 
 from ddgs import DDGS
@@ -43,14 +44,22 @@ def buscar_urls(consulta: str, top_n: int | None = None) -> list[str]:
 
     vistos: set[str] = set()
     resultados: list[str] = []
-    with DDGS() as ddgs:
-        for q in queries:
-            for hit in ddgs.text(q, max_results=top_n):
-                url = hit.get("href") or hit.get("url") or ""
-                if not url or url in vistos or _bloqueado(url):
-                    continue
-                vistos.add(url)
-                resultados.append(url)
+    for q in queries:
+        hits: list[dict] = []
+        for tentativa in range(3):  # retry com backoff: DuckDuckGo throttla com frequência
+            try:
+                hits = DDGS().text(q, max_results=top_n)
+                if hits:
+                    break
+            except Exception:
+                pass
+            time.sleep(1.5 * (tentativa + 1))
+        for hit in hits:
+            url = hit.get("href") or hit.get("url") or ""
+            if not url or url in vistos or _bloqueado(url):
+                continue
+            vistos.add(url)
+            resultados.append(url)
 
     # confiáveis primeiro, preservando a ordem de descoberta
     resultados.sort(key=lambda u: not _confiavel(u))

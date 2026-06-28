@@ -28,7 +28,6 @@ def offline(monkeypatch):
             nome=nome, setor="Indústria", descricao="manutenção preditiva", tecnologias=["IoT"], fontes=fontes
         ),
     )
-    monkeypatch.setattr(extractor, "salvar_empresa", lambda dados: None)
     monkeypatch.setattr(
         classifier, "classificar",
         lambda dados: Classificacao(rotulo="ai-native", justificativa="core de IA"),

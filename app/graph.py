@@ -27,8 +27,8 @@ from app.briefing import briefing
 
 
 def rota_classificacao(state: RadarState) -> str:
-    """non-ai encerra cedo; o resto segue para a validação de evidências."""
-    return "non_ai" if state.classificacao == "non-ai" else "continua"
+    """non-ai (ou sem dados coletados) encerra cedo; o resto segue para a validação."""
+    return "fim" if state.classificacao in ("non-ai", "sem-dados") else "continua"
 
 
 def rota_evidencia(state: RadarState) -> str:
@@ -66,7 +66,7 @@ def build_graph():
     builder.add_conditional_edges(
         "classifier",
         rota_classificacao,
-        {"non_ai": END, "continua": "evidence_validator"},
+        {"fim": END, "continua": "evidence_validator"},
     )
     # loop do Evidence Validator (com teto)
     builder.add_conditional_edges(

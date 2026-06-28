@@ -21,7 +21,6 @@ def _base_offline(monkeypatch, rotulo, descricao):
         extractor, "extract_dados",
         lambda textos, nome, fontes: DadosEmpresa(nome=nome, setor="Indústria", descricao=descricao, fontes=fontes),
     )
-    monkeypatch.setattr(extractor, "salvar_empresa", lambda dados: None)
     monkeypatch.setattr(classifier, "classificar", lambda dados: Classificacao(rotulo=rotulo))
     monkeypatch.setattr(rag, "recuperar", lambda q: [{"texto": "ctx", "fonte": "https://docs.nvidia.com/x"}])
     monkeypatch.setattr(

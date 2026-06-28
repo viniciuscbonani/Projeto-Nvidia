@@ -20,3 +20,13 @@ def test_classifier_preenche_rotulo_e_detalhe(monkeypatch):
     assert out["classificacao"] == "ai-native"
     assert out["classificacao_detalhe"].rotulo == "ai-native"
     assert out["classificacao_detalhe"].justificativa
+
+
+def test_classifier_sem_dados_nao_chama_llm(monkeypatch):
+    def nao_deveria(dados):
+        raise AssertionError("não deveria classificar sem dados coletados")
+
+    monkeypatch.setattr(clf, "classificar", nao_deveria)
+    # dados vazios (busca/scraping não trouxe nada) → rótulo honesto "sem-dados"
+    out = clf.classifier(RadarState(dados_estruturados=DadosEmpresa(nome="X")))
+    assert out["classificacao"] == "sem-dados"
