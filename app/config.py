@@ -20,7 +20,9 @@ class Settings(BaseSettings):
     # Banco relacional (SQLite embarcado por enquanto)
     database_url: str = "sqlite:///radar.db"
 
-    # Banco vetorial (Qdrant em modo local por enquanto; servidor depois)
+    # Banco vetorial (Qdrant). `qdrant_url` ligado (ex.: http://localhost:6333)
+    # usa o servidor Docker; vazio cai para o modo local embarcado (`qdrant_path`).
+    qdrant_url: str = ""
     qdrant_path: str = "./qdrant"
 
     # LLM (extração estruturada no Extractor). Servido pela Groq (API compatível
@@ -30,7 +32,7 @@ class Settings(BaseSettings):
     # Coleta web
     user_agent: str = "NVIDIA-Startup-Radar/0.1 (+pesquisa academica Inteli)"
     http_timeout: float = 15.0
-    busca_top_n: int = 8
+    busca_top_n: int = 12   # mais fontes/rodada → evidência mais saturada e estável
 
     # Loop do Evidence Validator (teto de tentativas de coleta)
     max_tentativas: int = 2

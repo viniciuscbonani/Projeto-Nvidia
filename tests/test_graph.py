@@ -1,7 +1,7 @@
 """Smoke test do fluxo completo (offline, caminho feliz).
 
 Roda o grafo de ponta a ponta sem tocar rede nem API: busca, fetch HTTP, extração
-e classificação por LLM são monkeypatchados. A evidência é suficiente (2 domínios
+e classificação por LLM são monkeypatchados. A evidência é suficiente (3 domínios
 + campos), então NÃO entra no loop e segue até o briefing.
 """
 
@@ -18,7 +18,7 @@ HTML = "<html><body><article><p>" + ("Tractian faz IA industrial. " * 10) + "</p
 def offline(monkeypatch):
     monkeypatch.setattr(
         search_planner, "buscar_urls",
-        lambda consulta, top_n=None: ["https://a.com/x", "https://b.com/y"],
+        lambda consulta, top_n=None: ["https://a.com/x", "https://b.com/y", "https://c.com/z"],
     )
     monkeypatch.setattr(scraper, "permitido_por_robots", lambda url: True)
     monkeypatch.setattr(scraper, "fetch_url", lambda url: HTML)

@@ -14,7 +14,11 @@ _INSTRUCAO = (
     "sobre uma startup, apoiando a abordagem comercial/técnica do programa NVIDIA Inception.\n"
     "Seja conciso e use linguagem de negócio (custo, latência, defensibilidade), não catálogo de produto.\n"
     "Estruture: visão geral da empresa, diagnóstico AI-native, tecnologias NVIDIA recomendadas com o "
-    "porquê, prioridade/próxima ação, e o score. Cite as fontes (URLs) do contexto ao afirmar specs."
+    "porquê, prioridade/próxima ação, e o score.\n"
+    "REGRA DE RIGOR: use SOMENTE informação presente no PERFIL, na RECOMENDAÇÃO ou no CONTEXTO NVIDIA. "
+    "NÃO invente números nem specs (latência em ms, custo por token, nomes de chip/modelo, benchmarks) "
+    "que não estejam nas fontes. Ao citar uma spec, inclua a URL da fonte; se não houver dado, escreva "
+    "'não informado' em vez de estimar."
 )
 
 

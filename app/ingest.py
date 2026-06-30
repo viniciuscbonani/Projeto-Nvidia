@@ -27,7 +27,7 @@ def main() -> None:
         if not html:
             print(f"  [falhou]         {titulo or url}")
             continue
-        texto = extract_text(html)
+        texto = rag.limpar(extract_text(html))   # corta changelog/emoji dos READMEs
         chunks = rag.chunk_texto(texto, fonte=url, titulo=titulo)
         todos.extend(chunks)
         print(f"  [ok] {titulo:<28} {len(chunks):>3} chunks  ({len(texto)} chars)")

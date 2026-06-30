@@ -9,6 +9,7 @@ Embeddings densos são provider-agnósticos: OpenAI (default) ou fastembed local
 """
 
 import atexit
+import re
 import time
 
 import cohere
@@ -30,7 +31,12 @@ _dense_gemini = None
 def get_client() -> QdrantClient:
     global _client
     if _client is None:
-        _client = QdrantClient(path=settings.qdrant_path)
+        # servidor (Docker) se QDRANT_URL estiver setado; senão, modo local embarcado
+        _client = (
+            QdrantClient(url=settings.qdrant_url)
+            if settings.qdrant_url
+            else QdrantClient(path=settings.qdrant_path)
+        )
     return _client
 
 
@@ -79,6 +85,27 @@ def _sparse_vec(sv) -> models.SparseVector:
 
 def _dense_dim() -> int:
     return len(embed_dense(["probe"])[0])
+
+
+# ---------- limpeza de corpus (Fase 7) ----------
+_RE_DATA = re.compile(r"^\[?\s*\d{1,4}[/.\-]\d{1,2}")  # linhas tipo "[2024/11/09] ..."
+
+
+def limpar(texto: str) -> str:
+    """Descarta ruído de README do GitHub: changelog/datas, badges e linhas
+    majoritariamente não-textuais (emoji/símbolos). Mantém o texto técnico."""
+    linhas = []
+    for ln in texto.split("\n"):
+        s = ln.strip()
+        if not s:
+            continue
+        if _RE_DATA.match(s):
+            continue
+        letras = sum(c.isalpha() for c in s)
+        if letras / len(s) < 0.5:  # badge/emoji/símbolo
+            continue
+        linhas.append(s)
+    return "\n".join(linhas)
 
 
 # ---------- chunking (por parágrafo, com overlap) ----------
@@ -157,18 +184,31 @@ def buscar_hibrido(query: str, k: int | None = None) -> list[dict]:
 
 
 def rerankear(query: str, candidatos: list[dict], n: int | None = None) -> list[dict]:
-    """Estágio 2 (precisão): Cohere Rerank (cross-encoder) → top-n."""
+    """Estágio 2 (precisão): Cohere Rerank (cross-encoder) → top-n.
+
+    Resiliente ao rate-limit da Cohere (trial = 10/min): tenta de novo com backoff
+    e, se ainda assim falhar, **degrada graciosamente** devolvendo os top-n da busca
+    híbrida sem rerank — perde precisão, mas não derruba o pipeline.
+    """
     n = n or settings.rag_top_n
     if not candidatos:
         return []
     co = cohere.Client(api_key=settings.cohere_api_key)
-    res = co.rerank(
-        model=settings.cohere_rerank_model,
-        query=query,
-        documents=[c["texto"] for c in candidatos],
-        top_n=min(n, len(candidatos)),
-    )
-    return [candidatos[r.index] for r in res.results]
+    for tentativa in range(3):
+        try:
+            res = co.rerank(
+                model=settings.cohere_rerank_model,
+                query=query,
+                documents=[c["texto"] for c in candidatos],
+                top_n=min(n, len(candidatos)),
+            )
+            return [candidatos[r.index] for r in res.results]
+        except cohere.TooManyRequestsError:
+            if tentativa < 2:
+                time.sleep(8 * (tentativa + 1))  # limite é por minuto; espera e repete
+                continue
+            print("[rerank] Cohere 429 — degradando p/ candidatos sem rerank.")
+    return candidatos[:n]
 
 
 def recuperar(query: str) -> list[dict]:

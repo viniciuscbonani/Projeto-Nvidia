@@ -33,6 +33,23 @@ def _confiavel(url: str) -> bool:
     return any(dom == c or dom.endswith("." + c) for c in DOMINIOS_CONFIAVEIS)
 
 
+# Backends do ddgs tentados em ordem (cai para o próximo quando um throttla/falha).
+_BACKENDS = ["duckduckgo", "bing", "brave", "mojeek", "google"]
+
+
+def _buscar(query: str, top_n: int) -> list[dict]:
+    """Tenta cada backend até obter resultados (robusto ao throttle de um deles)."""
+    for backend in _BACKENDS:
+        try:
+            hits = DDGS().text(query, max_results=top_n, backend=backend)
+            if hits:
+                return hits
+        except Exception:
+            pass
+        time.sleep(0.5)
+    return []
+
+
 def buscar_urls(consulta: str, top_n: int | None = None) -> list[str]:
     """Pesquisa a empresa/consulta e devolve as URLs a coletar.
 
@@ -45,16 +62,7 @@ def buscar_urls(consulta: str, top_n: int | None = None) -> list[str]:
     vistos: set[str] = set()
     resultados: list[str] = []
     for q in queries:
-        hits: list[dict] = []
-        for tentativa in range(3):  # retry com backoff: DuckDuckGo throttla com frequência
-            try:
-                hits = DDGS().text(q, max_results=top_n)
-                if hits:
-                    break
-            except Exception:
-                pass
-            time.sleep(1.5 * (tentativa + 1))
-        for hit in hits:
+        for hit in _buscar(q, top_n):
             url = hit.get("href") or hit.get("url") or ""
             if not url or url in vistos or _bloqueado(url):
                 continue

@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 
 from app.state import RadarState
 
-MIN_DOMINIOS = 2
+MIN_DOMINIOS = 3   # piso de fontes distintas; rodadas magras voltam ao Scraper (loop)
 
 
 def _dominio(url: str) -> str:

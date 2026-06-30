@@ -9,6 +9,12 @@ from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
 
+class ListaEmpresas(BaseModel):
+    """Saída do passo de descoberta — nomes de startups extraídos de listas/notícias."""
+
+    empresas: list[str] = Field(default_factory=list)
+
+
 class DadosEmpresa(BaseModel):
     """Saída estruturada do Extractor (structured output via LLM).
 

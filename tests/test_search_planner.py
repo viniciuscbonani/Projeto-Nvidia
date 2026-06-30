@@ -13,7 +13,7 @@ class FakeDDGS:
     def __exit__(self, *a):
         return False
 
-    def text(self, query, max_results=None):
+    def text(self, query, max_results=None, **kwargs):  # aceita backend=...
         return [
             {"href": "https://linkedin.com/company/tractian"},  # bloqueado
             {"href": "https://example.com/sobre"},              # normal
