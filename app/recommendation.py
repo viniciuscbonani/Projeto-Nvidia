@@ -70,12 +70,16 @@ _INSTRUCAO_NOTAS = (
     "ancorada (seja rigoroso; a nota alimenta um ranking):\n"
     "- ai_native: 0-3 = só chama API de terceiro; 4-6 = algum modelo/dado próprio; "
     "7-10 = modelo E dado proprietários e controla a própria inferência (Tractian = 10).\n"
-    "- nvidia_fit: tamanho do gap/uplift que a NVIDIA destrava. 0-3 = pouco a ganhar; "
-    "4-6 = ganho moderado; 7-10 = gap claro numa camada que uma tech NVIDIA do contexto resolve.\n"
+    "- nvidia_fit: FORÇA da oportunidade de adoção NVIDIA (uplift), NÃO o quanto a empresa está "
+    "atrasada. Empresa madura que já roda inferência/treino em escala é ALTO fit, não baixo. "
+    "0-3 = sem caminho claro de adoção; 4-6 = adoção possível de valor moderado; 7-10 = caminho "
+    "claro e de alto valor numa camada que uma tech NVIDIA do contexto serve (serving/inferência, "
+    "dados em GPU, robótica). Tractian = alto.\n"
     "- tracao: 0-3 = pré-seed/sem tração; 4-6 = seed com clientes; 7-10 = Series B+ e receita relevante.\n"
     "- time_ia: 0-3 = sem sinal de time de IA; 4-6 = alguns engenheiros de ML; "
     "7-10 = founders/liderança técnica fortes em IA.\n"
-    "Julgue SÓ pelo material fornecido; não invente. Onde faltar sinal, pontue baixo (não médio)."
+    "Julgue SÓ pelo material fornecido; não invente. Onde faltar sinal FACTUAL (tração/time/dados), "
+    "pontue baixo (não médio) — isso NÃO se aplica a nvidia_fit, que mede oportunidade, não deficiência."
 )
 
 

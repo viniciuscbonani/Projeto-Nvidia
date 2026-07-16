@@ -8,20 +8,22 @@ Chain-of-Verification / grounding.
 Duas camadas:
   1. `estrutura_suficiente` — pré-gate barato, sem LLM (≥ 3 domínios de fonte
      distintos E `setor`/`descricao` preenchidos). Rodadas magras nem chamam o LLM.
-  2. `verificar_afirmacoes` — o faithfulness check por LLM: para cada campo não-vazio,
-     diz se algum trecho o sustenta e qual a fonte. Campos de ALTO RISCO sem lastro
-     (funding/founders/clientes) são removidos de `dados_estruturados`; o veredito de
-     cada afirmação é registrado em `afirmacoes_verificadas` (rastreabilidade).
+  2. `verificar_afirmacoes` — o faithfulness check por LLM: para cada CAMPO preenchido,
+     diz se os trechos o sustentam. Campos de ALTO RISCO sem lastro (funding/founders/
+     clientes) são removidos de `dados_estruturados`; o veredito de cada campo é
+     registrado em `afirmacoes_verificadas` (rastreabilidade).
+
+Schema de saída é PLANO (booleanos fixos por campo) — o json_schema da Groq é frágil
+com estruturas aninhadas (ver CLAUDE.md). Se a chamada falhar mesmo assim, o nó degrada
+para a regra mecânica em vez de derrubar o pipeline.
 
 É o ponto do loop: se a evidência for insuficiente e ainda houver tentativas, o grafo
 volta ao Search Planner (teto em `tentativas`). Incrementa `tentativas` a cada checagem.
-Sem chave LLM / `grounding_habilitado=False` cai para a regra mecânica (só a camada 1).
 """
 
-from typing import Optional
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from app.config import settings
 from app.llm import chat
@@ -50,27 +52,30 @@ def estrutura_suficiente(state: RadarState) -> bool:
     return len(dominios) >= MIN_DOMINIOS and campos_ok
 
 
-class _Veredito(BaseModel):
-    campo: str
-    sustentada: bool = False
-    fonte: Optional[str] = None
-
-
 class _SaidaGrounding(BaseModel):
-    vereditos: list[_Veredito] = Field(default_factory=list)
+    """Saída PLANA (json_schema da Groq é frágil com aninhamento): um booleano por campo.
+    True = os trechos sustentam a afirmação daquele campo."""
+
+    setor_ok: bool = False
+    descricao_ok: bool = False
+    funding_ok: bool = False
+    founders_ok: bool = False
+    clientes_ok: bool = False
+    tecnologias_ok: bool = False
 
 
 _INSTRUCAO = (
     "Você audita afirmações sobre uma startup contra os TRECHOS coletados de páginas web. "
-    "Para CADA afirmação listada, decida se algum trecho a sustenta explicitamente. "
-    "Se sim, marque sustentada=true e informe a URL (fonte) do trecho que a sustenta. "
-    "Se nenhum trecho a sustenta, marque sustentada=false e deixe fonte vazia. "
-    "Não use conhecimento externo nem infira; julgue SÓ pelos trechos. Responda no schema pedido."
+    "Para CADA campo listado, decida se algum trecho o sustenta explicitamente e marque o "
+    "booleano correspondente (ex.: setor_ok). Marque true só se houver lastro nos trechos; "
+    "senão false. Não use conhecimento externo nem infira; julgue SÓ pelos trechos. "
+    "Responda no schema pedido."
 )
 
 
 def _afirmacoes(dados: DadosEmpresa) -> list[tuple[str, str]]:
-    """Extrai pares (campo, valor) dos campos não-vazios a verificar."""
+    """Pares (campo, valor) dos campos não-vazios a verificar — um por campo.
+    Campos de lista (founders/clientes/tecnologias) viram um único item juntado."""
     pares: list[tuple[str, str]] = []
     if dados.setor:
         pares.append(("setor", dados.setor))
@@ -78,19 +83,19 @@ def _afirmacoes(dados: DadosEmpresa) -> list[tuple[str, str]]:
         pares.append(("descricao", dados.descricao))
     if dados.funding:
         pares.append(("funding", dados.funding))
-    for f in dados.founders:
-        pares.append(("founders", f))
-    for c in dados.clientes:
-        pares.append(("clientes", c))
-    for t in dados.tecnologias:
-        pares.append(("tecnologias", t))
+    if dados.founders:
+        pares.append(("founders", ", ".join(dados.founders)))
+    if dados.clientes:
+        pares.append(("clientes", ", ".join(dados.clientes)))
+    if dados.tecnologias:
+        pares.append(("tecnologias", ", ".join(dados.tecnologias)))
     return pares
 
 
 def verificar_afirmacoes(
     dados: DadosEmpresa, conteudo_bruto: list[dict]
 ) -> list[VerificacaoAfirmacao]:
-    """Faithfulness check por LLM: cada afirmação × trechos → veredito + fonte."""
+    """Faithfulness check por LLM: cada campo preenchido × trechos → veredito."""
     pares = _afirmacoes(dados)
     if not pares:
         return []
@@ -102,33 +107,18 @@ def verificar_afirmacoes(
     prompt = (
         f"{_INSTRUCAO}\n\n"
         f"EMPRESA-ALVO: {dados.nome}\n\n"
-        f"AFIRMAÇÕES A VERIFICAR:\n{lista}\n\n"
+        f"AFIRMAÇÕES A VERIFICAR (por campo):\n{lista}\n\n"
         f"TRECHOS COLETADOS:\n{trechos}"
     )
     structured = chat().with_structured_output(_SaidaGrounding, method="json_schema")
     saida: _SaidaGrounding = structured.invoke(prompt)
 
-    # casa cada par (na ordem) com o veredito de mesmo campo; default = não sustentada
-    vereditos_por_campo: dict[str, list[_Veredito]] = {}
-    for v in saida.vereditos:
-        vereditos_por_campo.setdefault(v.campo, []).append(v)
-
-    resultado: list[VerificacaoAfirmacao] = []
-    consumidos: dict[str, int] = {}
-    for campo, valor in pares:
-        fila = vereditos_por_campo.get(campo, [])
-        i = consumidos.get(campo, 0)
-        v = fila[i] if i < len(fila) else None
-        consumidos[campo] = i + 1
-        resultado.append(
-            VerificacaoAfirmacao(
-                campo=campo,
-                valor=valor,
-                sustentada=bool(v and v.sustentada),
-                fonte=(v.fonte if v and v.sustentada else None),
-            )
+    return [
+        VerificacaoAfirmacao(
+            campo=campo, valor=valor, sustentada=getattr(saida, f"{campo}_ok", False)
         )
-    return resultado
+        for campo, valor in pares
+    ]
 
 
 def _campo_sustentado(vereditos: list[VerificacaoAfirmacao], campo: str) -> bool:
@@ -140,15 +130,15 @@ def _campo_sustentado(vereditos: list[VerificacaoAfirmacao], campo: str) -> bool
 def _limpar_alto_risco(
     dados: DadosEmpresa, vereditos: list[VerificacaoAfirmacao]
 ) -> DadosEmpresa:
-    """Remove de uma cópia dos dados os campos de alto risco sem lastro."""
+    """Remove de uma cópia dos dados os campos de alto risco sem lastro (por campo)."""
     limpo = dados.model_copy(deep=True)
-    nao_sustentados = {
-        (v.campo, v.valor) for v in vereditos if not v.sustentada
-    }
-    if ("funding", limpo.funding or "") in nao_sustentados:
+    nao_sustentados = {v.campo for v in vereditos if not v.sustentada}
+    if "funding" in nao_sustentados:
         limpo.funding = None
-    limpo.founders = [f for f in limpo.founders if ("founders", f) not in nao_sustentados]
-    limpo.clientes = [c for c in limpo.clientes if ("clientes", c) not in nao_sustentados]
+    if "founders" in nao_sustentados:
+        limpo.founders = []
+    if "clientes" in nao_sustentados:
+        limpo.clientes = []
     return limpo
 
 
@@ -165,7 +155,14 @@ def evidence_validator(state: RadarState) -> dict:
     ):
         return {"evidencias_ok": estrutura_suficiente(state), "tentativas": tentativas}
 
-    vereditos = verificar_afirmacoes(dados, state.conteudo_bruto)
+    # o grounding é um reforço: se a chamada falhar (ex.: Groq recusa o JSON), degrada
+    # para a regra mecânica em vez de derrubar o pipeline inteiro.
+    try:
+        vereditos = verificar_afirmacoes(dados, state.conteudo_bruto)
+    except Exception as e:  # noqa: BLE001 — degradar é intencional
+        print(f"[evidence_validator] grounding falhou ({e}); usando regra mecânica.")
+        return {"evidencias_ok": estrutura_suficiente(state), "tentativas": tentativas}
+
     dados_limpo = _limpar_alto_risco(dados, vereditos)
 
     # gate estrito: estrutura OK E os campos-chave de fato ancorados nas fontes

@@ -15,10 +15,13 @@ _INSTRUCAO = (
     "Seja conciso e use linguagem de negócio (custo, latência, defensibilidade), não catálogo de produto.\n"
     "Estruture: visão geral da empresa, diagnóstico AI-native, tecnologias NVIDIA recomendadas com o "
     "porquê, prioridade/próxima ação, e o score.\n"
-    "REGRA DE RIGOR: use SOMENTE informação presente no PERFIL, na RECOMENDAÇÃO ou no CONTEXTO NVIDIA. "
-    "NÃO invente números nem specs (latência em ms, custo por token, nomes de chip/modelo, benchmarks) "
-    "que não estejam nas fontes. Ao citar uma spec, inclua a URL da fonte; se não houver dado, escreva "
-    "'não informado' em vez de estimar."
+    "REGRA DE RIGOR (crítica): use SOMENTE informação presente no PERFIL, na RECOMENDAÇÃO ou no "
+    "CONTEXTO NVIDIA. TODO número, percentual ou métrica — ex.: 'reduz latência 50%', 'corta custo 30%', "
+    "'3x throughput', latência em ms, custo por token, benchmarks, nomes de chip/modelo — só pode aparecer "
+    "se estiver LITERALMENTE em uma das fontes. Caso contrário é PROIBIDO citá-lo: escreva o benefício de "
+    "forma qualitativa (ex.: 'menor latência de inferência', 'redução de custo de serving') ou use "
+    "'não quantificado'. Nunca estime, arredonde nem invente ganhos percentuais. Ao citar uma spec real, "
+    "inclua a URL da fonte."
 )
 
 
