@@ -15,7 +15,7 @@ Dois reforços de robustez (esta é a decisão do desvio, vale estabilizá-la):
 from collections import Counter
 
 from app.config import settings
-from app.llm import chat
+from app.llm import chat_structured
 from app.state import Classificacao, DadosEmpresa, RadarState
 
 _INSTRUCAO = (
@@ -46,9 +46,7 @@ def classificar(dados: DadosEmpresa) -> Classificacao:
     Temperatura > 0 de propósito: os votos da self-consistency precisam variar; a
     maioria (ver `classificar_consistente`) compensa o ruído individual.
     """
-    structured = chat(temperature=settings.classifier_temperatura).with_structured_output(
-        Classificacao, method="json_schema"
-    )
+    structured = chat_structured(Classificacao, temperature=settings.classifier_temperatura)
     prompt = f"{_INSTRUCAO}\n\n{_EXEMPLOS}\n\nDados da empresa:\n{dados.model_dump_json(indent=2)}"
     return structured.invoke(prompt)
 

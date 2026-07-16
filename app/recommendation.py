@@ -16,7 +16,7 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 from app.config import settings
-from app.llm import chat
+from app.llm import chat_structured
 from app.score import EIXOS, compor
 from app.state import Classificacao, DadosEmpresa, RadarState, Recomendacao, Score
 
@@ -50,7 +50,7 @@ def recomendar(
 ) -> Recomendacao:
     """Só a recomendação (7 campos). Sem notas — pontuação é tarefa à parte."""
     prompt = f"{_INSTRUCAO_REC}\n\n{_contexto(dados, classificacao, contexto_rag)}"
-    structured = chat().with_structured_output(Recomendacao, method="json_schema")
+    structured = chat_structured(Recomendacao)
     return structured.invoke(prompt)
 
 
@@ -88,9 +88,7 @@ def pontuar(
 ) -> Score:
     """Um juiz: as 4 notas com rubrica ancorada. Temperatura > 0 p/ o painel variar."""
     prompt = f"{_INSTRUCAO_NOTAS}\n\n{_contexto(dados, classificacao, contexto_rag)}"
-    structured = chat(temperature=settings.score_temperatura).with_structured_output(
-        _SaidaNotas, method="json_schema"
-    )
+    structured = chat_structured(_SaidaNotas, temperature=settings.score_temperatura)
     s: _SaidaNotas = structured.invoke(prompt)
     return Score(ai_native=s.ai_native, nvidia_fit=s.nvidia_fit, tracao=s.tracao, time_ia=s.time_ia)
 

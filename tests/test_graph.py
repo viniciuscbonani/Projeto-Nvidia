@@ -59,6 +59,7 @@ def offline(monkeypatch):
         lambda dados, classificacao, contexto_rag: Score(ai_native=8, nvidia_fit=9, tracao=6, time_ia=7),
     )
     monkeypatch.setattr(briefing, "redigir", lambda state: "## Briefing (fake)")
+    monkeypatch.setattr(briefing, "revisar", lambda rascunho, contexto: rascunho)
 
 
 def test_pipeline_preenche_todos_os_campos(offline):

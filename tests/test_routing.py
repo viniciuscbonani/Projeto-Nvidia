@@ -44,6 +44,7 @@ def _base_offline(monkeypatch, rotulo, descricao):
         lambda dados, classificacao, contexto_rag: Score(),
     )
     monkeypatch.setattr(briefing, "redigir", lambda state: "## Briefing (fake)")
+    monkeypatch.setattr(briefing, "revisar", lambda rascunho, contexto: rascunho)
 
 
 def test_non_ai_encerra_cedo(monkeypatch):

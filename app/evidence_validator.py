@@ -26,7 +26,7 @@ from urllib.parse import urlparse
 from pydantic import BaseModel
 
 from app.config import settings
-from app.llm import chat
+from app.llm import chat_structured
 from app.state import DadosEmpresa, RadarState, VerificacaoAfirmacao
 
 MIN_DOMINIOS = 3   # piso de fontes distintas; rodadas magras voltam ao Scraper (loop)
@@ -110,7 +110,7 @@ def verificar_afirmacoes(
         f"AFIRMAÇÕES A VERIFICAR (por campo):\n{lista}\n\n"
         f"TRECHOS COLETADOS:\n{trechos}"
     )
-    structured = chat().with_structured_output(_SaidaGrounding, method="json_schema")
+    structured = chat_structured(_SaidaGrounding)
     saida: _SaidaGrounding = structured.invoke(prompt)
 
     return [

@@ -11,7 +11,7 @@ para revisão humana, que então alimenta o `batch`.
 
 import sys
 
-from app.llm import chat
+from app.llm import chat_structured
 from app.scraper import extract_text, fetch_url, permitido_por_robots
 from app.search_planner import _buscar
 from app.state import ListaEmpresas
@@ -57,7 +57,7 @@ def extrair_nomes(texto: str) -> list[str]:
     """LLM extrai os nomes de startups brasileiras de IA do texto (structured output)."""
     if not texto.strip():
         return []
-    structured = chat().with_structured_output(ListaEmpresas, method="json_schema")
+    structured = chat_structured(ListaEmpresas)
     resultado: ListaEmpresas = structured.invoke(f"{_INSTRUCAO}\n\nTEXTO:\n{texto}")
     return resultado.empresas
 

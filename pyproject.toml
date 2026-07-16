@@ -7,6 +7,7 @@ dependencies = [
     "langgraph>=1.2",
     "langchain-core>=1.4",
     "langchain-openai>=1.3",
+    "langchain-nvidia-ai-endpoints>=1.4",
     "langchain-google-genai>=2.0",
     "openai>=2.43",
     "cohere>=7.0",

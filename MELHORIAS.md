@@ -40,8 +40,14 @@ Melhorias nos nós atuais (em ordem de prioridade):
       separadas. `pontuar_em_painel` roda `score_n_juizes` (=3) juízes e faz a MÉDIA das
       notas (análogo numérico do self-consistency do A.3 — média em vez de moda). Reduz a
       variância do score que ordena o ranking. — `app/recommendation.py`, `app/config.py`
-- [ ] **5. Briefing com reflection** (baixa prioridade — ver nota) — gerar → crítico caça
-      spec sem fonte / linguagem de catálogo → reescrever. — `app/briefing.py`
+- [x] **5. Briefing com reflection** — ✅ FEITO (justificado por evidência: o teste ao vivo
+      deixou passar um "10×" e uma citação trocada). `redigir` → `revisar` (passada única de
+      LLM que remove número sem lastro e citação incoerente, preservando o resto). Toggle
+      `briefing_reflection` + fallback. `numeros_sem_fonte` (detector determinístico de
+      métrica `%`/`×` sem fonte) vira teste + aviso de observabilidade. — `app/briefing.py`, `app/config.py`
+      → **Falta:** *fornecer* a citação certa (o revisor só remove a errada) → depende de
+      cobertura do RAG / grounding pós-RAG. E, se ainda vazar número, quebrar em crítico
+      separado + reescrita (2 chamadas).
 
 > **Nota — por que a reflection do briefing vem por último:** grounding valida a
 > ENTRADA (fatos atômicos); reflection valida a SAÍDA (o texto gerado). Há

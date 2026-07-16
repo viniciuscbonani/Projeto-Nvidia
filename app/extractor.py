@@ -6,7 +6,7 @@ no fim do pipeline (db.salvar_resultado, chamada pelo runner). A extração é f
 separada do nó, para ser testável sem LLM.
 """
 
-from app.llm import chat
+from app.llm import chat_structured
 from app.state import DadosEmpresa, RadarState
 
 # teto de contexto enviado ao LLM (evita estourar tokens com páginas longas)
@@ -22,7 +22,7 @@ _INSTRUCAO = (
 def extract_dados(textos: list[str], nome: str, fontes: list[str]) -> DadosEmpresa:
     """Chama o LLM com structured output e devolve um DadosEmpresa."""
     contexto = "\n\n---\n\n".join(textos)[:MAX_CONTEXTO]
-    structured = chat().with_structured_output(DadosEmpresa, method="json_schema")
+    structured = chat_structured(DadosEmpresa)
     prompt = f"{_INSTRUCAO}\n\nEmpresa-alvo: {nome}\n\nTrechos:\n{contexto}"
     dados: DadosEmpresa = structured.invoke(prompt)
 

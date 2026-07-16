@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     # Chaves de API
     openai_api_key: str = ""
     groq_api_key: str = ""
+    nvidia_api_key: str = ""
+    huggingface_api_key: str = ""
     gemini_api_key: str = ""
     cohere_api_key: str = ""
 
@@ -28,6 +30,13 @@ class Settings(BaseSettings):
     # LLM (extração estruturada no Extractor). Servido pela Groq (API compatível
     # com OpenAI) quando há GROQ_API_KEY; senão, OpenAI direto.
     llm_model: str = "openai/gpt-oss-20b"
+    # Retries do cliente LLM: o tier grátis da Groq tem 8000 TPM e as melhorias
+    # (self-consistency, painel, reflection) disparam ~10 chamadas em rajada. O 429 é
+    # transitório ("try again in Xs") e o cliente honra o backoff — só precisa de fôlego.
+    llm_max_retries: int = 6
+    # Timeout do ChatNVIDIA: o tier grátis "build" da NVIDIA tem latência alta
+    # (cold start/fila ~30-100s por chamada). O default de 60s estoura → subimos.
+    nvidia_timeout: int = 180
 
     # Coleta web
     user_agent: str = "NVIDIA-Startup-Radar/0.1 (+pesquisa academica Inteli)"
@@ -43,6 +52,10 @@ class Settings(BaseSettings):
     # N=1 desliga o painel. Análogo numérico da self-consistency do Classifier.
     score_n_juizes: int = 3
     score_temperatura: float = 0.4
+
+    # Briefing: passada de reflection (revisa o rascunho contra as fontes, removendo
+    # número sem lastro e citação incoerente). False (ou sem chave LLM) pula a revisão.
+    briefing_reflection: bool = True
 
     # Loop do Evidence Validator (teto de tentativas de coleta)
     max_tentativas: int = 2
@@ -67,14 +80,38 @@ class Settings(BaseSettings):
     w_time_ia: float = 0.20
 
     @property
+    def llm_provider(self) -> str:
+        """Provedor ativo do LLM (precedência: NVIDIA → HuggingFace → Groq → OpenAI).
+        Para trocar, comente/apague a chave do provedor que não quer usar no .env."""
+        if self.nvidia_api_key:
+            return "nvidia"
+        if self.huggingface_api_key:
+            return "huggingface"
+        if self.groq_api_key:
+            return "groq"
+        return "openai"
+
+    @property
     def llm_base_url(self) -> str | None:
-        """URL base do LLM: Groq se houver chave Groq; senão OpenAI (None)."""
-        return "https://api.groq.com/openai/v1" if self.groq_api_key else None
+        """URL base do caminho ChatOpenAI (Groq/HF/OpenAI são todos OpenAI-compat).
+        O provedor NVIDIA usa o cliente ChatNVIDIA e não passa por aqui."""
+        p = self.llm_provider
+        if p == "groq":
+            return "https://api.groq.com/openai/v1"
+        if p == "huggingface":
+            return "https://router.huggingface.co/v1"
+        return None  # OpenAI usa o default
 
     @property
     def llm_api_key(self) -> str:
-        """Chave do LLM: prioriza Groq; cai para OpenAI."""
-        return self.groq_api_key or self.openai_api_key
+        """Chave do LLM do provedor ativo. Também usada pelos guards (grounding/reflection
+        só ligam quando há chave)."""
+        return (
+            self.nvidia_api_key
+            or self.huggingface_api_key
+            or self.groq_api_key
+            or self.openai_api_key
+        )
 
 
 settings = Settings()

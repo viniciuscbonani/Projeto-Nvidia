@@ -48,6 +48,7 @@ def test_self_consistency_vence_a_maioria(monkeypatch):
 
 def test_classifier_usa_voto_majoritario(monkeypatch):
     # o nó inteiro deve refletir a maioria, não o primeiro voto
+    monkeypatch.setattr(clf.settings, "classifier_n_votos", 3)  # independe do .env
     votos = iter([
         Classificacao(rotulo="ai-enabled", justificativa="a"),
         Classificacao(rotulo="ai-native", justificativa="b"),
