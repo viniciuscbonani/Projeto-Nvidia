@@ -4,7 +4,7 @@ Ponto único de execução, usado por CLI, lote e Streamlit:
 
     python -m app.batch "Tractian" "Gupy" "iFood"
 
-Sequencial de propósito: respeita os limites de tier free (Groq, Gemini, Cohere).
+Sequencial: respeita o rate-limit dos tiers free (Groq, Gemini, Cohere).
 """
 
 import sys

@@ -7,9 +7,13 @@ e classificação por LLM são monkeypatchados. A evidência é suficiente (3 do
 
 import pytest
 
-from app import briefing, classifier, extractor, rag, recommendation, scraper, search_planner
+from app import (
+    briefing, classifier, evidence_validator, extractor, rag, recommendation, scraper, search_planner,
+)
 from app.graph import graph
-from app.state import Classificacao, DadosEmpresa, RadarState, Recomendacao, Score
+from app.state import (
+    Classificacao, DadosEmpresa, RadarState, Recomendacao, Score, VerificacaoAfirmacao,
+)
 
 HTML = "<html><body><article><p>" + ("Tractian faz IA industrial. " * 10) + "</p></article></body></html>"
 
@@ -31,6 +35,14 @@ def offline(monkeypatch):
     monkeypatch.setattr(
         classifier, "classificar",
         lambda dados: Classificacao(rotulo="ai-native", justificativa="core de IA"),
+    )
+    # grounding do Evidence Validator: setor/descricao sustentados (sem tocar o LLM)
+    monkeypatch.setattr(
+        evidence_validator, "verificar_afirmacoes",
+        lambda dados, conteudo: [
+            VerificacaoAfirmacao(campo="setor", valor=dados.setor or "", sustentada=True, fonte="https://a.com/x"),
+            VerificacaoAfirmacao(campo="descricao", valor=dados.descricao, sustentada=True, fonte="https://a.com/x"),
+        ],
     )
     monkeypatch.setattr(
         rag, "recuperar",

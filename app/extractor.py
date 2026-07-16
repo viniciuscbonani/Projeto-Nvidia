@@ -1,4 +1,4 @@
-"""Extractor (Fase 2 — real).
+"""Extractor — transforma o conteúdo bruto em dados estruturados.
 
 Transforma o conteúdo bruto coletado em dados estruturados (structured output via
 LLM Groq, schema DadosEmpresa). NÃO grava no banco: a persistência acontece uma vez

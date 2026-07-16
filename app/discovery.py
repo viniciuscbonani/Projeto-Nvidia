@@ -1,4 +1,4 @@
-"""Descoberta autônoma de startups (fecha o "encontrar" do TAPI §2).
+"""Descoberta autônoma de startups — do tema à lista de nomes.
 
 A partir de um TEMA, descobre uma LISTA de nomes de startups brasileiras de IA —
 reusando a busca, o scraper e o LLM. NÃO faz a análise completa: produz a lista

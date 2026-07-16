@@ -1,4 +1,4 @@
-"""Avaliação de qualidade do RAG (passo 9 do TAPI).
+"""Avaliação de qualidade do RAG (hit@k).
 
 Mede a recuperação com um conjunto de perguntas rotuladas (pergunta → tecnologia
 NVIDIA esperada). Para cada pergunta, roda `rag.recuperar` e checa se a tech

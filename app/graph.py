@@ -1,15 +1,16 @@
-"""Grafo do pipeline (Fase 3 — desvio condicional + loop).
+"""Grafo do pipeline: desvio condicional + loop.
 
-Os 8 nós, agora com ramificação: o Classifier desvia `non-ai` direto para END, e
-o Evidence Validator faz loop de volta ao Search Planner quando a evidência é
-insuficiente (com teto em `tentativas`). Cada nó vive em seu arquivo; aqui só
-importamos e fazemos a fiação.
+Os 8 nós, com ramificação. O Evidence Validator vem ANTES do Classifier: ele faz o
+grounding (limpa dados sem lastro) e é o ponto do loop de volta ao Search Planner
+quando a evidência é insuficiente (teto em `tentativas`). Só então o Classifier
+decide — sobre dados já verificados — e desvia `non-ai` direto para END (antes do
+RAG, poupando a parte cara). Cada nó vive em seu arquivo; aqui só fazemos a fiação.
 
-    START → search_planner → scraper → extractor → classifier
-      classifier ──(non-ai)──────────────────────────────────→ END
-      classifier ──(ai-native/ai-enabled)──→ evidence_validator
+    START → search_planner → scraper → extractor → evidence_validator
       evidence_validator ──(insuf. e tentativas<teto)──→ search_planner   (loop)
-      evidence_validator ──(ok ou teto)──→ nvidia_rag → recommendation → briefing → END
+      evidence_validator ──(ok ou teto)──→ classifier
+      classifier ──(non-ai/sem-dados)──────────────────────────────────→ END
+      classifier ──(ai-native/ai-enabled)──→ nvidia_rag → recommendation → briefing → END
 """
 
 from langgraph.graph import END, START, StateGraph
@@ -57,22 +58,22 @@ def build_graph():
     builder.add_edge(START, "search_planner")
     builder.add_edge("search_planner", "scraper")
     builder.add_edge("scraper", "extractor")
-    builder.add_edge("extractor", "classifier")
+    builder.add_edge("extractor", "evidence_validator")
     builder.add_edge("nvidia_rag", "recommendation")
     builder.add_edge("recommendation", "briefing")
     builder.add_edge("briefing", END)
 
-    # desvio condicional após o Classifier
-    builder.add_conditional_edges(
-        "classifier",
-        rota_classificacao,
-        {"fim": END, "continua": "evidence_validator"},
-    )
-    # loop do Evidence Validator (com teto)
+    # loop do Evidence Validator (com teto); ao sair, segue para o Classifier
     builder.add_conditional_edges(
         "evidence_validator",
         rota_evidencia,
-        {"coleta_mais": "search_planner", "continua": "nvidia_rag"},
+        {"coleta_mais": "search_planner", "continua": "classifier"},
+    )
+    # desvio condicional após o Classifier (já sobre dados verificados)
+    builder.add_conditional_edges(
+        "classifier",
+        rota_classificacao,
+        {"fim": END, "continua": "nvidia_rag"},
     )
     return builder.compile()
 

@@ -18,7 +18,7 @@ class ListaEmpresas(BaseModel):
 class DadosEmpresa(BaseModel):
     """Saída estruturada do Extractor (structured output via LLM).
 
-    Os campos vêm do brief (§2): dados públicos da empresa, produto, setor,
+    Dados públicos da empresa: produto, setor,
     clientes, funding, founders e tecnologias. `fontes` guarda as URLs usadas
     (rastreabilidade).
     """
@@ -31,6 +31,20 @@ class DadosEmpresa(BaseModel):
     clientes: list[str] = Field(default_factory=list)
     tecnologias: list[str] = Field(default_factory=list)  # stack / sinais de IA
     fontes: list[str] = Field(default_factory=list)       # URLs usadas
+
+
+class VerificacaoAfirmacao(BaseModel):
+    """Veredito do grounding (Evidence Validator) para uma afirmação sobre a empresa.
+
+    Para cada campo não-vazio do `DadosEmpresa`, o faithfulness check diz se algum
+    trecho coletado o sustenta e qual fonte (URL) o ancora. Dá rastreabilidade e
+    alimenta a decisão do loop.
+    """
+
+    campo: str                          # nome do campo verificado (ex.: "funding")
+    valor: str = ""                     # o valor afirmado
+    sustentada: bool = False            # há trecho coletado que sustenta?
+    fonte: Optional[str] = None         # URL do trecho que sustenta (se houver)
 
 
 class Classificacao(BaseModel):
@@ -50,7 +64,7 @@ class Classificacao(BaseModel):
 class Recomendacao(BaseModel):
     """Saída estruturada do Recommendation Agent.
 
-    Os 7 campos são exigidos pelo brief do projeto (§5.5). O agente deve
+    Os 7 campos da recomendação. O agente deve
     produzir isto como structured output (não texto solto) e toda recomendação
     precisa citar a origem (campo `evidencias`).
     """
@@ -84,8 +98,9 @@ class RadarState(BaseModel):
     classificacao: Optional[str] = None                 # rótulo: "ai-native" | "ai-enabled" | "non-ai"
     classificacao_detalhe: Optional[Classificacao] = None  # análise rica dos 3 eixos
     evidencias_ok: bool = False                         # gate do Evidence Validator
+    afirmacoes_verificadas: list[VerificacaoAfirmacao] = Field(default_factory=list)  # vereditos do grounding
     tentativas: int = 0                                 # teto do loop do Validator
     contexto_rag: list[str] = Field(default_factory=list)      # trechos NVIDIA recuperados
-    recomendacao: Optional[Recomendacao] = None         # saída estruturada (7 campos do brief §5.5)
+    recomendacao: Optional[Recomendacao] = None         # saída estruturada (7 campos)
     score: Optional[Score] = None                       # score composto (4 notas + composto)
     briefing: str = ""                                  # relatório executivo final

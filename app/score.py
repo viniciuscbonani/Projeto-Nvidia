@@ -1,8 +1,8 @@
-"""Score composto (brief §"Score composto").
+"""Score composto.
 
 `composto = w1·AI-Native + w2·NVIDIA-Fit + w3·Tração/VC + w4·Time-de-IA`, com as 4
 notas (0–10) julgadas pelo LLM e os pesos vindos de `settings` (default) ou passados
-explicitamente (o dashboard manda os pesos dos sliders → re-rank ao vivo).
+explicitamente (o dashboard passa os pesos dos sliders e recalcula o ranking).
 Função pura e determinística; aceita `Score` ou dict.
 """
 
@@ -24,7 +24,7 @@ def pesos_padrao() -> dict:
 def compor(notas, pesos: dict | None = None) -> float:
     """Média ponderada das 4 notas, em 0–10. `notas` pode ser um Score ou um dict.
 
-    Os pesos são **normalizados** (dividido pela soma) — assim valem como pesos
+    Os pesos são normalizados (dividido pela soma) — assim valem como pesos
     *relativos* e o score nunca estoura a escala, mesmo que os sliders da UI não
     somem 1.0. Pesos default já somam 1.0, então não muda o comportamento padrão.
     """

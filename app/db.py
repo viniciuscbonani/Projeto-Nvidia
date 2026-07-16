@@ -1,10 +1,10 @@
 """Camada relacional (SQLAlchemy + SQLite por enquanto).
 
 Reusa `settings.database_url` de app/config.py — trocar SQLite por PostgreSQL é
-só mudar a `DATABASE_URL`. Tipos **portáveis** (String/Text/JSON/DateTime), sem
+só mudar a `DATABASE_URL`. Tipos portáveis (String/Text/JSON/DateTime), sem
 JSONB/ARRAY (convenção do CLAUDE.md), para a migração ser config, não reescrita.
 
-`Empresa` guarda os dados raspados **e** o resultado da análise (classificação,
+`Empresa` guarda os dados raspados e o resultado da análise (classificação,
 score, recomendação, briefing). `salvar_resultado` faz upsert por nome — uma linha
 por empresa, sem duplicar (a gravação acontece uma vez, no fim do pipeline).
 """

@@ -1,4 +1,4 @@
-"""Startup Classifier (Fase 3 — real).
+"""Startup Classifier — aplica os 3 eixos AI-native.
 
 Aplica os 3 eixos AI-native (CLAUDE.md "Conceitos de domínio") sobre os dados
 estruturados, via LLM com structured output. Devolve um rótulo

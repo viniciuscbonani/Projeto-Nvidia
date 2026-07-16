@@ -1,8 +1,8 @@
-"""NVIDIA RAG — lado online (Fase 4 — real).
+"""NVIDIA RAG — lado online da recuperação.
 
 Monta uma query a partir do perfil da empresa e recupera o contexto técnico da
 base NVIDIA (Qdrant) via busca híbrida + Cohere Rerank. Preenche `contexto_rag`
-com trechos **citados** (cada um com sua fonte) — assim a Recommendation (Fase 5)
+com trechos citados (cada um com sua fonte) — assim a Recommendation
 não inventa specs. A ingestão offline (app/ingest.py) precisa ter rodado antes.
 """
 

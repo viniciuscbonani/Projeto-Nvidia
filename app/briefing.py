@@ -1,4 +1,4 @@
-"""Briefing (Fase 5 — real).
+"""Briefing — relatório executivo final.
 
 Redige o relatório executivo final para o gerente de Startups & VCs da NVIDIA, a
 partir de tudo que o pipeline produziu (perfil, classificação, recomendação, score)

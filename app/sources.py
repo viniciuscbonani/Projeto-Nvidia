@@ -1,14 +1,14 @@
-"""Registro canônico de fontes do projeto (TAPI §7).
+"""Registro canônico de fontes do projeto.
 
-Diretórios de startups (§7.1) e fontes de notícias (§7.2). Na Fase 2 essas listas
-servem para **priorizar** resultados da busca web (domínios confiáveis) e
-**descartar** fontes restritivas (LinkedIn). Não são seed por empresa — a
+Diretórios de startups e fontes de notícias. Essas listas
+servem para priorizar resultados da busca web (domínios confiáveis) e
+descartar fontes restritivas (LinkedIn). Não são seed por empresa — a
 descoberta de URLs é feita por busca (ver app/search_planner.py).
 """
 
 from urllib.parse import urlparse
 
-# §7.1 — diretórios e aceleradoras
+# diretórios e aceleradoras
 FONTES_DIRETORIOS = [
     "https://www.startse.com/",
     "https://distrito.me/",
@@ -26,7 +26,7 @@ FONTES_DIRETORIOS = [
     "https://www.openstartups.net/",
 ]
 
-# §7.2 — notícias e sinais públicos
+# notícias e sinais públicos
 FONTES_NOTICIAS = [
     "https://braziljournal.com/",
     "https://neofeed.com.br/",
@@ -50,8 +50,8 @@ DOMINIOS_CONFIAVEIS = {
     _dominio(u) for u in FONTES_DIRETORIOS + FONTES_NOTICIAS
 }
 
-# Base de conhecimento NVIDIA (Fase 4) — URLs amigáveis a scraping (docs/GitHub/rapids),
-# cobrindo os produtos do brief §5.4. Ingeridas uma vez por app/ingest.py.
+# Base de conhecimento NVIDIA — URLs amigáveis a scraping (docs/GitHub/rapids),
+# cobrindo os produtos NVIDIA. Ingeridas uma vez por app/ingest.py.
 NVIDIA_DOCS = [
     {"titulo": "NVIDIA Inception", "url": "https://www.nvidia.com/en-us/startups/"},
     {"titulo": "NIM", "url": "https://github.com/NVIDIA/nim-deploy"},
@@ -69,7 +69,7 @@ NVIDIA_DOCS = [
     {"titulo": "NVIDIA Clara / MONAI", "url": "https://github.com/Project-MONAI/MONAI"},
     {"titulo": "NVIDIA AI Enterprise", "url": "https://github.com/NVIDIA/GenerativeAIExamples"},
     {"titulo": "Bolo de 5 camadas da IA (NVIDIA)", "url": "https://blogs.nvidia.com/blog/ai-5-layer-cake/"},
-    # §8.1 — materiais conceituais (AI-native services)
+    # materiais conceituais (AI-native services)
     {"titulo": "AI services (Sequoia)", "url": "https://www.sequoiacap.com/article/services-the-new-software/"},
     {"titulo": "AI-native services playbook (Emergence)", "url": "https://www.emcap.com/thoughts/the-ai-native-services-playbook"},
 ]

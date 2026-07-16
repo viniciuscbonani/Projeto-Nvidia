@@ -1,7 +1,7 @@
-"""Recommendation (Fase 5 — real).
+"""Recommendation — cruza gaps da empresa × portfólio NVIDIA.
 
 Cruza o perfil/gaps da empresa × portfólio NVIDIA usando o `contexto_rag` (trechos
-recuperados, com fonte) e produz a `Recomendacao` (7 campos do brief §5.5) + as 4
+recuperados, com fonte) e produz a `Recomendacao` (7 campos) + as 4
 notas do score (0–10, julgadas pelo LLM). O código calcula o `composto` (pesos
 configuráveis). LLM = Groq (via app.llm). Estrutura plana no structured output
 (mais robusto no json_schema da Groq); mapeada para Recomendacao + Score.
@@ -17,7 +17,7 @@ from app.state import Classificacao, DadosEmpresa, RadarState, Recomendacao, Sco
 
 
 class _SaidaLLM(BaseModel):
-    # 7 campos da recomendação (brief §5.5)
+    # 7 campos da recomendação
     tecnologias: list[str] = Field(default_factory=list)
     justificativa_tecnica: str = ""
     justificativa_negocio: str = ""

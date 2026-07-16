@@ -1,10 +1,10 @@
 """Infra de RAG: Qdrant (modo local) + chunking + embeddings + busca híbrida + Cohere rerank.
 
 Compartilhada por app/ingest.py (offline) e app/nvidia_rag.py (online). A busca é
-**híbrida**: vetor denso (semântica) + esparso BM25 (termos exatos, siglas) fundidos
-por RRF — recall largo; o Cohere Rerank dá a precisão (top-5).
+híbrida: vetor denso (semântica) + esparso BM25 (termos exatos, siglas) fundidos
+por RRF; o Cohere Rerank reordena os melhores (top-5).
 
-Embeddings densos são provider-agnósticos: OpenAI (default) ou fastembed local
+Embeddings densos são provider-agnósticos: Gemini ou fastembed local
 (grátis), via `settings.embedding_provider`.
 """
 
@@ -21,7 +21,7 @@ from app.config import settings
 
 _DENSE_LOCAL_MODEL = "BAAI/bge-small-en-v1.5"
 
-# singletons preguiçosos (carregam só quando usados)
+# carregados só no primeiro uso
 _client: QdrantClient | None = None
 _sparse: SparseTextEmbedding | None = None
 _dense_local: TextEmbedding | None = None
@@ -87,7 +87,7 @@ def _dense_dim() -> int:
     return len(embed_dense(["probe"])[0])
 
 
-# ---------- limpeza de corpus (Fase 7) ----------
+# ---------- limpeza de corpus ----------
 _RE_DATA = re.compile(r"^\[?\s*\d{1,4}[/.\-]\d{1,2}")  # linhas tipo "[2024/11/09] ..."
 
 
@@ -187,8 +187,8 @@ def rerankear(query: str, candidatos: list[dict], n: int | None = None) -> list[
     """Estágio 2 (precisão): Cohere Rerank (cross-encoder) → top-n.
 
     Resiliente ao rate-limit da Cohere (trial = 10/min): tenta de novo com backoff
-    e, se ainda assim falhar, **degrada graciosamente** devolvendo os top-n da busca
-    híbrida sem rerank — perde precisão, mas não derruba o pipeline.
+    e, se ainda assim falhar, retorna os candidatos sem rerank — perde precisão,
+    mas não derruba o pipeline.
     """
     n = n or settings.rag_top_n
     if not candidatos:

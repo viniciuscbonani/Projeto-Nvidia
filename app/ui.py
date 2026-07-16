@@ -3,8 +3,8 @@
     streamlit run app/ui.py
 
 Lê o banco (resultados persistidos pelo runner), permite analisar uma empresa nova
-on-demand, **reponderar o score ao vivo** (sliders — modo caça-Tractian) e **avaliar
-a qualidade do RAG**.
+sob demanda, reponderar o score pelos sliders (recalcula o ranking) e avaliar
+a qualidade do RAG.
 """
 
 import sys
@@ -123,8 +123,8 @@ with st.sidebar:
                 st.session_state["descobertas"] = []
                 st.rerun()
 
-    # --- pesos do score (re-rank ao vivo) ---
-    st.header("Pesos do score (caça-Tractian)")
+    # --- pesos do score (recalcula o ranking) ---
+    st.header("Pesos do score")
     pesos = {
         "ai_native": st.slider("AI-Native", 0.0, 1.0, settings.w_ai_native, 0.05),
         "nvidia_fit": st.slider("NVIDIA-Fit", 0.0, 1.0, settings.w_nvidia_fit, 0.05),

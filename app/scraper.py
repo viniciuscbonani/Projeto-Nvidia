@@ -1,4 +1,4 @@
-"""Scraper (Fase 2 — real).
+"""Scraper — coleta e extrai o texto público de cada URL.
 
 Para cada URL do plano de busca: respeita robots.txt, baixa a página (httpx) e
 extrai o texto principal (trafilatura). Guarda a fonte de cada trecho

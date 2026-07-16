@@ -36,8 +36,11 @@ class Settings(BaseSettings):
 
     # Loop do Evidence Validator (teto de tentativas de coleta)
     max_tentativas: int = 2
+    # Grounding (faithfulness check) do Evidence Validator. False (ou sem chave LLM)
+    # cai para a regra mecânica antiga — mantém offline/testes robustos.
+    grounding_habilitado: bool = True
 
-    # RAG (Fase 4): embeddings, Qdrant e rerank
+    # RAG: embeddings, Qdrant e rerank
     # "gemini" (multilíngue, grátis) | "openai" | "local" (fastembed, grátis/offline)
     embedding_provider: str = "gemini"
     embedding_model: str = "text-embedding-3-small"        # usado se provider=openai
@@ -47,7 +50,7 @@ class Settings(BaseSettings):
     rag_top_n: int = 5                           # após o rerank (precisão)
     cohere_rerank_model: str = "rerank-v3.5"
 
-    # Score composto (Fase 5): pesos configuráveis (somam 1.0). Diferencial = expor isto.
+    # Score composto: pesos configuráveis (somam 1.0).
     w_ai_native: float = 0.30
     w_nvidia_fit: float = 0.30
     w_tracao: float = 0.20
