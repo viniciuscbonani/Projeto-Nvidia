@@ -49,8 +49,13 @@ def extract_text(html: str) -> str:
 
 
 def scraper(state: RadarState) -> dict:
-    trechos: list[dict] = []
+    # acumula entre as voltas do loop: parte do que já havia e só acrescenta fontes
+    # novas (dedup por URL). Assim a busca dirigida ao gap SOMA evidência, não substitui.
+    trechos: list[dict] = list(state.conteudo_bruto)
+    ja_coletadas = {t.get("fonte") for t in trechos}
     for url in state.urls_busca:
+        if url in ja_coletadas:
+            continue
         if not permitido_por_robots(url):
             continue
         html = fetch_url(url)
@@ -59,4 +64,5 @@ def scraper(state: RadarState) -> dict:
         texto = extract_text(html)
         if texto.strip():
             trechos.append({"texto": texto, "fonte": url})
+            ja_coletadas.add(url)
     return {"conteudo_bruto": trechos}

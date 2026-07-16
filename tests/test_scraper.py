@@ -33,3 +33,20 @@ def test_scraper_preenche_conteudo_com_fonte(monkeypatch):
     item = out["conteudo_bruto"][0]
     assert item["fonte"] == "https://exemplo.com/tractian"
     assert "Tractian" in item["texto"]
+
+
+def test_scraper_acumula_e_deduplica_por_fonte(monkeypatch):
+    # simula o retry do loop: já havia um trecho; a nova rodada traz a MESMA fonte
+    # (deve ser pulada) + uma nova (deve ser acrescentada).
+    monkeypatch.setattr(scraper, "permitido_por_robots", lambda url: True)
+    monkeypatch.setattr(scraper, "fetch_url", lambda url: HTML_FIXTURE)
+
+    state = RadarState(
+        conteudo_bruto=[{"texto": "antigo", "fonte": "https://a.com/x"}],
+        urls_busca=["https://a.com/x", "https://b.com/novo"],
+    )
+    out = scraper.scraper(state)
+
+    fontes = [t["fonte"] for t in out["conteudo_bruto"]]
+    assert fontes == ["https://a.com/x", "https://b.com/novo"]  # antigo preservado + novo
+    assert out["conteudo_bruto"][0]["texto"] == "antigo"        # não re-raspou a fonte já vista

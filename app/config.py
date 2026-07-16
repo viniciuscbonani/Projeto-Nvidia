@@ -34,6 +34,16 @@ class Settings(BaseSettings):
     http_timeout: float = 15.0
     busca_top_n: int = 12   # mais fontes/rodada → evidência mais saturada e estável
 
+    # Classifier: self-consistency (classifica N vezes e vota a maioria) + temperatura
+    # (>0 para os votos variarem; a maioria compensa o ruído). N=1 desliga a votação.
+    classifier_n_votos: int = 3
+    classifier_temperatura: float = 0.4
+
+    # Score: painel de juízes (pontua N vezes e faz a média das notas) + temperatura.
+    # N=1 desliga o painel. Análogo numérico da self-consistency do Classifier.
+    score_n_juizes: int = 3
+    score_temperatura: float = 0.4
+
     # Loop do Evidence Validator (teto de tentativas de coleta)
     max_tentativas: int = 2
     # Grounding (faithfulness check) do Evidence Validator. False (ou sem chave LLM)

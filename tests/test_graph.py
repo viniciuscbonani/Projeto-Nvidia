@@ -22,7 +22,7 @@ HTML = "<html><body><article><p>" + ("Tractian faz IA industrial. " * 10) + "</p
 def offline(monkeypatch):
     monkeypatch.setattr(
         search_planner, "buscar_urls",
-        lambda consulta, top_n=None: ["https://a.com/x", "https://b.com/y", "https://c.com/z"],
+        lambda consulta, top_n=None, queries_extra=None: ["https://a.com/x", "https://b.com/y", "https://c.com/z"],
     )
     monkeypatch.setattr(scraper, "permitido_por_robots", lambda url: True)
     monkeypatch.setattr(scraper, "fetch_url", lambda url: HTML)
@@ -50,10 +50,13 @@ def offline(monkeypatch):
     )
     monkeypatch.setattr(
         recommendation, "recomendar",
-        lambda dados, classificacao, contexto_rag: (
-            Recomendacao(tecnologias=["Triton"], evidencias=["https://docs.nvidia.com/triton"]),
-            Score(ai_native=8, nvidia_fit=9, tracao=6, time_ia=7),
+        lambda dados, classificacao, contexto_rag: Recomendacao(
+            tecnologias=["Triton"], evidencias=["https://docs.nvidia.com/triton"],
         ),
+    )
+    monkeypatch.setattr(
+        recommendation, "pontuar_em_painel",
+        lambda dados, classificacao, contexto_rag: Score(ai_native=8, nvidia_fit=9, tracao=6, time_ia=7),
     )
     monkeypatch.setattr(briefing, "redigir", lambda state: "## Briefing (fake)")
 

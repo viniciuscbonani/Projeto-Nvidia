@@ -17,7 +17,7 @@ def _base_offline(monkeypatch, rotulo, descricao):
     """Monkeypatcha busca/rede/LLM. `descricao` vazio força evidência insuficiente."""
     monkeypatch.setattr(
         search_planner, "buscar_urls",
-        lambda consulta, top_n=None: ["https://a.com/x", "https://b.com/y", "https://c.com/z"],
+        lambda consulta, top_n=None, queries_extra=None: ["https://a.com/x", "https://b.com/y", "https://c.com/z"],
     )
     monkeypatch.setattr(scraper, "permitido_por_robots", lambda url: True)
     monkeypatch.setattr(scraper, "fetch_url", lambda url: HTML)
@@ -37,7 +37,11 @@ def _base_offline(monkeypatch, rotulo, descricao):
     monkeypatch.setattr(rag, "recuperar", lambda q: [{"texto": "ctx", "fonte": "https://docs.nvidia.com/x"}])
     monkeypatch.setattr(
         recommendation, "recomendar",
-        lambda dados, classificacao, contexto_rag: (Recomendacao(tecnologias=["Triton"]), Score()),
+        lambda dados, classificacao, contexto_rag: Recomendacao(tecnologias=["Triton"]),
+    )
+    monkeypatch.setattr(
+        recommendation, "pontuar_em_painel",
+        lambda dados, classificacao, contexto_rag: Score(),
     )
     monkeypatch.setattr(briefing, "redigir", lambda state: "## Briefing (fake)")
 

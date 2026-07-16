@@ -24,13 +24,22 @@ Melhorias nos nós atuais (em ordem de prioridade):
       (e no loop nunca via a versão saneada). Agora: `extractor → evidence_validator →
       [loop] → classifier → [non-ai? END] → nvidia_rag`. O desvio `non-ai` segue antes
       do RAG (poupa o caro); Classifier saiu do loop (roda 1×, sobre dados limpos). — `app/graph.py`
-- [ ] **2. Loop dirigido ao gap** — no retry, buscar o CAMPO que faltou
-      ("{empresa} funding", "{empresa} fundadores"), não só aumentar `top_n`. — `app/search_planner.py:80`
-- [ ] **3. Classifier few-shot + self-consistency** — âncoras (Tractian=10, um ai-enabled,
-      um non-ai); classificar 3× e votar, ou gerador-crítico. — `app/classifier.py`
-- [ ] **4. Separar recomendação de pontuação** — hoje uma chamada faz as duas. Split +
-      rubrica ancorada por nota (com evidência). Bônus: painel de juízes (média de 2-3
-      LLMs) reduz variância do score. — `app/recommendation.py`
+- [x] **2. Loop dirigido ao gap** — ✅ FEITO. No retry, `campos_em_falta(state)` acha os
+      campos vazios em `dados_estruturados` OU não-sustentados no grounding, e o Search
+      Planner monta queries específicas (`funding → "investimento rodada aporte"`) via
+      `queries_extra`. **+ Acúmulo:** o Scraper passou a somar `conteudo_bruto` entre as
+      voltas (dedup por fonte), então a busca dirigida ENRIQUECE a evidência em vez de
+      substituí-la (sem isso, o retry poderia perder campos já achados). — `app/search_planner.py`, `app/scraper.py`
+- [x] **3. Classifier few-shot + self-consistency** — ✅ FEITO. Few-shot: âncoras no prompt
+      (Tractian=ai-native, um ai-enabled, um non-ai) calibram a fronteira. Self-consistency:
+      `classificar_consistente` classifica `classifier_n_votos` (=3) vezes com temperatura
+      >0 e devolve o rótulo majoritário (detalhe vem de um voto vencedor). Estabiliza a
+      decisão que controla o desvio `non-ai`. — `app/classifier.py`, `app/config.py`
+- [x] **4. Separar recomendação de pontuação** — ✅ FEITO. `recomendar` (7 campos) e
+      `pontuar` (4 notas com rubrica ancorada 0-3/4-6/7-10 por eixo) viraram chamadas
+      separadas. `pontuar_em_painel` roda `score_n_juizes` (=3) juízes e faz a MÉDIA das
+      notas (análogo numérico do self-consistency do A.3 — média em vez de moda). Reduz a
+      variância do score que ordena o ranking. — `app/recommendation.py`, `app/config.py`
 - [ ] **5. Briefing com reflection** (baixa prioridade — ver nota) — gerar → crítico caça
       spec sem fonte / linguagem de catálogo → reescrever. — `app/briefing.py`
 

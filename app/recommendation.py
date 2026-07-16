@@ -1,38 +1,39 @@
-"""Recommendation — cruza gaps da empresa × portfólio NVIDIA.
+"""Recommendation — cruza gaps da empresa × portfólio NVIDIA (recomendar) e pontua
+a startup (pontuar), como DUAS tarefas separadas.
 
-Cruza o perfil/gaps da empresa × portfólio NVIDIA usando o `contexto_rag` (trechos
-recuperados, com fonte) e produz a `Recomendacao` (7 campos) + as 4
-notas do score (0–10, julgadas pelo LLM). O código calcula o `composto` (pesos
-configuráveis). LLM = Groq (via app.llm). Estrutura plana no structured output
-(mais robusto no json_schema da Groq); mapeada para Recomendacao + Score.
+Antes era uma chamada só (recomendar + notas juntas), o que diluía as duas. Agora:
+- `recomendar` produz só a `Recomendacao` (7 campos), raciocinando sobre o gap.
+- `pontuar` produz só as 4 notas (`Score`), com rubrica ancorada por eixo.
+- `pontuar_em_painel` roda `pontuar` com N juízes e faz a MÉDIA das notas (reduz o
+  ruído do julgamento subjetivo — é o análogo numérico da self-consistency do Classifier).
+
+O código calcula o `composto` (pesos configuráveis, via `score.compor`). LLM = Groq
+(via app.llm). Structured output plano (mais robusto no json_schema da Groq).
 """
 
 from typing import Optional
 
 from pydantic import BaseModel, Field
 
+from app.config import settings
 from app.llm import chat
-from app.score import compor
+from app.score import EIXOS, compor
 from app.state import Classificacao, DadosEmpresa, RadarState, Recomendacao, Score
 
 
-class _SaidaLLM(BaseModel):
-    # 7 campos da recomendação
-    tecnologias: list[str] = Field(default_factory=list)
-    justificativa_tecnica: str = ""
-    justificativa_negocio: str = ""
-    prioridade: Optional[str] = None
-    complexidade: Optional[str] = None
-    proxima_acao: str = ""
-    evidencias: list[str] = Field(default_factory=list)
-    # 4 notas do score (0–10)
-    nota_ai_native: float = 0.0
-    nota_nvidia_fit: float = 0.0
-    nota_tracao: float = 0.0
-    nota_time_ia: float = 0.0
+def _contexto(dados: DadosEmpresa, classificacao: Optional[Classificacao], contexto_rag: list[str]) -> str:
+    contexto = "\n".join(contexto_rag) or "(sem contexto recuperado)"
+    classif = classificacao.model_dump_json() if classificacao else "{}"
+    return (
+        f"PERFIL DA EMPRESA:\n{dados.model_dump_json(indent=2)}\n\n"
+        f"CLASSIFICAÇÃO AI-NATIVE:\n{classif}\n\n"
+        f"CONTEXTO NVIDIA (trechos com fonte):\n{contexto}"
+    )
 
 
-_INSTRUCAO = (
+# ---------------------------------------------------------------- recomendar
+
+_INSTRUCAO_REC = (
     "Você recomenda tecnologias NVIDIA para uma startup, para o gerente de Startups & VCs.\n"
     "O campo `tecnologias` deve conter SÓ produtos NVIDIA a ADOTAR (ex.: Triton, TensorRT-LLM, "
     "NIM, NeMo, RAPIDS) — NÃO liste o stack atual da empresa nem ferramentas de terceiros "
@@ -40,46 +41,74 @@ _INSTRUCAO = (
     "Use APENAS produtos que aparecem no CONTEXTO NVIDIA fornecido — não invente specs nem nomes "
     "de produto. Para cada afirmação técnica, cite a fonte (URL) no campo evidencias.\n"
     "Raciocine sobre o gap: em qual camada a startup trava e qual tecnologia NVIDIA destrava.\n"
-    "justificativa_negocio em linguagem de negócio (custo por token, latência, defensibilidade).\n"
-    "Dê também 4 notas de 0 a 10: nota_ai_native (quão AI-native), nota_nvidia_fit (tamanho do "
-    "gap/uplift que a NVIDIA destrava), nota_tracao (tração/funding), nota_time_ia (força do time)."
+    "justificativa_negocio em linguagem de negócio (custo por token, latência, defensibilidade)."
 )
 
 
 def recomendar(
     dados: DadosEmpresa, classificacao: Optional[Classificacao], contexto_rag: list[str]
-) -> tuple[Recomendacao, Score]:
-    contexto = "\n".join(contexto_rag) or "(sem contexto recuperado)"
-    classif = classificacao.model_dump_json() if classificacao else "{}"
-    prompt = (
-        f"{_INSTRUCAO}\n\n"
-        f"PERFIL DA EMPRESA:\n{dados.model_dump_json(indent=2)}\n\n"
-        f"CLASSIFICAÇÃO AI-NATIVE:\n{classif}\n\n"
-        f"CONTEXTO NVIDIA (trechos com fonte):\n{contexto}"
-    )
-    structured = chat().with_structured_output(_SaidaLLM, method="json_schema")
-    s: _SaidaLLM = structured.invoke(prompt)
+) -> Recomendacao:
+    """Só a recomendação (7 campos). Sem notas — pontuação é tarefa à parte."""
+    prompt = f"{_INSTRUCAO_REC}\n\n{_contexto(dados, classificacao, contexto_rag)}"
+    structured = chat().with_structured_output(Recomendacao, method="json_schema")
+    return structured.invoke(prompt)
 
-    rec = Recomendacao(
-        tecnologias=s.tecnologias,
-        justificativa_tecnica=s.justificativa_tecnica,
-        justificativa_negocio=s.justificativa_negocio,
-        prioridade=s.prioridade,
-        complexidade=s.complexidade,
-        proxima_acao=s.proxima_acao,
-        evidencias=s.evidencias,
-    )
-    notas = Score(
-        ai_native=s.nota_ai_native,
-        nvidia_fit=s.nota_nvidia_fit,
-        tracao=s.nota_tracao,
-        time_ia=s.nota_time_ia,
-    )
-    return rec, notas
 
+# ------------------------------------------------------------------ pontuar
+
+class _SaidaNotas(BaseModel):
+    """As 4 notas (0–10). Sem `composto` — esse é calculado pelo código (score.compor)."""
+
+    ai_native: float = 0.0
+    nvidia_fit: float = 0.0
+    tracao: float = 0.0
+    time_ia: float = 0.0
+
+
+_INSTRUCAO_NOTAS = (
+    "Você é um analista de VC pontuando uma startup em 4 eixos, de 0 a 10. Use a rubrica "
+    "ancorada (seja rigoroso; a nota alimenta um ranking):\n"
+    "- ai_native: 0-3 = só chama API de terceiro; 4-6 = algum modelo/dado próprio; "
+    "7-10 = modelo E dado proprietários e controla a própria inferência (Tractian = 10).\n"
+    "- nvidia_fit: tamanho do gap/uplift que a NVIDIA destrava. 0-3 = pouco a ganhar; "
+    "4-6 = ganho moderado; 7-10 = gap claro numa camada que uma tech NVIDIA do contexto resolve.\n"
+    "- tracao: 0-3 = pré-seed/sem tração; 4-6 = seed com clientes; 7-10 = Series B+ e receita relevante.\n"
+    "- time_ia: 0-3 = sem sinal de time de IA; 4-6 = alguns engenheiros de ML; "
+    "7-10 = founders/liderança técnica fortes em IA.\n"
+    "Julgue SÓ pelo material fornecido; não invente. Onde faltar sinal, pontue baixo (não médio)."
+)
+
+
+def pontuar(
+    dados: DadosEmpresa, classificacao: Optional[Classificacao], contexto_rag: list[str]
+) -> Score:
+    """Um juiz: as 4 notas com rubrica ancorada. Temperatura > 0 p/ o painel variar."""
+    prompt = f"{_INSTRUCAO_NOTAS}\n\n{_contexto(dados, classificacao, contexto_rag)}"
+    structured = chat(temperature=settings.score_temperatura).with_structured_output(
+        _SaidaNotas, method="json_schema"
+    )
+    s: _SaidaNotas = structured.invoke(prompt)
+    return Score(ai_native=s.ai_native, nvidia_fit=s.nvidia_fit, tracao=s.tracao, time_ia=s.time_ia)
+
+
+def pontuar_em_painel(
+    dados: DadosEmpresa,
+    classificacao: Optional[Classificacao],
+    contexto_rag: list[str],
+    n: int | None = None,
+) -> Score:
+    """Painel de juízes: pontua `n` vezes e devolve a MÉDIA de cada eixo."""
+    n = n or settings.score_n_juizes
+    votos = [pontuar(dados, classificacao, contexto_rag) for _ in range(n)]
+    media = {eixo: round(sum(getattr(v, eixo) for v in votos) / len(votos), 2) for eixo in EIXOS}
+    return Score(**media)
+
+
+# --------------------------------------------------------------------- nó
 
 def recommendation(state: RadarState) -> dict:
     dados = state.dados_estruturados or DadosEmpresa(nome=state.consulta)
-    rec, notas = recomendar(dados, state.classificacao_detalhe, state.contexto_rag)
+    rec = recomendar(dados, state.classificacao_detalhe, state.contexto_rag)
+    notas = pontuar_em_painel(dados, state.classificacao_detalhe, state.contexto_rag)
     notas.composto = compor(notas)
     return {"recomendacao": rec, "score": notas}
