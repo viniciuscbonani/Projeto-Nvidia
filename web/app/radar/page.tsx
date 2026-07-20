@@ -14,6 +14,7 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 import GraficoRadar, { CORES_SERIES } from "./GraficoRadar";
+import TabsRadar from "./TabsRadar";
 
 // descreve o formato de cada empresa que vem da API (GET /empresas)
 type Empresa = {
@@ -415,8 +416,10 @@ function RadarApp() {
 
   return (
     <main className="mx-auto w-full max-w-[1400px] px-6 py-8">
+      <TabsRadar />
+
       {/* ── Barra de topo: título + contagem | analisar nova ─────── */}
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="mt-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Radar</h1>
           <p className="mt-1 text-sm text-ink-muted">

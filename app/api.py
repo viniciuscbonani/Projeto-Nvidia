@@ -13,12 +13,17 @@ from app.db import Empresa, SessionLocal
 
 from pydantic import BaseModel
 from app import batch
+from app import discovery
 
 
 app = FastAPI(title="NVIDIA Startup AI Radar API")
 
 class AnalisarRequest(BaseModel):
     consulta: str
+
+
+class DescobrirRequest(BaseModel):
+    tema: str
 
 
 # libera o front (Next em :3000) a chamar esta API (:8000) pelo navegador.
@@ -70,3 +75,22 @@ def detalhe_empresa(nome: str) -> dict:
 def analisar_empresa(req: AnalisarRequest) -> dict:
     batch.analisar(req.consulta)  # roda o grafo e persiste (~1-2 min)
     return {"ok": True, "consulta": req.consulta}
+
+
+@app.post("/descobrir")
+def descobrir_startups(req: DescobrirRequest) -> dict:
+    """Tema → lista de nomes de startups (busca web + LLM; lento, como /analisar).
+
+    Só descobre NOMES; não analisa nem grava nada no banco. Erros de
+    busca/LLM viram lista vazia (o front trata como 'nada encontrado').
+    """
+    try:
+        nomes = discovery.descobrir(req.tema)
+    except Exception:
+        # loga no console do uvicorn (para diagnóstico) e devolve vazio,
+        # que o front apresenta como "nada encontrado"
+        import traceback
+
+        traceback.print_exc()
+        nomes = []
+    return {"tema": req.tema, "nomes": nomes}

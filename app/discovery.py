@@ -10,6 +10,7 @@ para revisão humana, que então alimenta o `batch`.
 """
 
 import sys
+import time
 
 from app.llm import chat_structured
 from app.scraper import extract_text, fetch_url, permitido_por_robots
@@ -54,12 +55,23 @@ def _coletar_texto(tema: str, top_n: int = 5) -> str:
 
 
 def extrair_nomes(texto: str) -> list[str]:
-    """LLM extrai os nomes de startups brasileiras de IA do texto (structured output)."""
+    """LLM extrai os nomes de startups brasileiras de IA do texto (structured output).
+
+    O modo JSON da Groq falha esporadicamente ("json_validate_failed" com
+    geração vazia); por isso tentamos até 3 vezes antes de desistir.
+    """
     if not texto.strip():
         return []
     structured = chat_structured(ListaEmpresas)
-    resultado: ListaEmpresas = structured.invoke(f"{_INSTRUCAO}\n\nTEXTO:\n{texto}")
-    return resultado.empresas
+    for tentativa in range(3):
+        try:
+            resultado: ListaEmpresas = structured.invoke(f"{_INSTRUCAO}\n\nTEXTO:\n{texto}")
+            return resultado.empresas
+        except Exception:
+            if tentativa == 2:
+                raise
+            time.sleep(1.5)
+    return []
 
 
 def descobrir(tema: str, n: int = 10) -> list[str]:
