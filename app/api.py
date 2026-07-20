@@ -57,6 +57,7 @@ def detalhe_empresa(nome: str) -> dict:
             "nome": e.nome,
             "setor": e.setor,
             "descricao": e.descricao,
+            "dados": e.dados,  # dump do DadosEmpresa: founders, funding, clientes, tecnologias
             "classificacao": e.classificacao,
             "score": e.score,
             "notas": e.notas,
